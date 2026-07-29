@@ -1,0 +1,1756 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ValIQ - Индекс инвестиционной готовности предприятия</title>
+  <meta name="description" content="ValIQ Manufacturing Enterprise: индекс инвестиционной готовности, оценочный диапазон стоимости предприятия, рекомендации и дорожная карта.">
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-2: #1d222c;
+      --line: #2b3341;
+      --text: #e8edf5;
+      --muted: #9aa6b6;
+      --faint: #687386;
+      --cyan: #00d4ff;
+      --magenta: #d81bff;
+      --green: #35d07f;
+      --yellow: #f6c350;
+      --red: #ff6470;
+      --blue: #6ba5ff;
+      --shadow: 0 18px 50px rgba(0,0,0,.28);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0b0d11;
+      color: var(--text);
+      letter-spacing: 0;
+    }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+    canvas#neural-bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(0,212,255,.15), transparent 30%),
+        radial-gradient(circle at 82% 0%, rgba(216,27,255,.12), transparent 28%),
+        linear-gradient(180deg, #121620 0%, #0f1115 40%, #07080b 100%);
+      opacity: var(--neural-opacity, .82);
+      filter: brightness(var(--neural-brightness, 1.18)) saturate(var(--neural-saturation, 1.18));
+      pointer-events: none;
+    }
+    .scroll-shade {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(0,212,255,var(--scroll-cyan, .12)), transparent 32%),
+        radial-gradient(circle at 82% 4%, rgba(216,27,255,var(--scroll-magenta, .10)), transparent 30%),
+        linear-gradient(180deg, rgba(15,17,21,0) 0%, rgba(8,9,12,var(--scroll-mid, .12)) 54%, rgba(0,0,0,var(--scroll-bottom, .34)) 100%),
+        rgba(0,0,0,var(--scroll-dark, 0));
+      transition: background .12s linear;
+    }
+    .app {
+      min-height: 100vh;
+      position: relative;
+      z-index: 2;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid rgba(0,212,255,.16);
+      background: rgba(10,13,18,.82);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.20);
+    }
+    .topbar-inner {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 8px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 230px;
+      text-decoration: none;
+    }
+    .brand img { height: 32px; width: auto; }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #101820;
+      border: 1px solid rgba(0,212,255,.35);
+      color: var(--cyan);
+      font-weight: 800;
+      box-shadow: 0 0 18px rgba(0,212,255,.26), 0 0 28px rgba(216,27,255,.10);
+    }
+    .brand-text strong { display: block; font-size: 15px; line-height: 1.1; }
+    .brand-text span { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .company-select {
+      width: 238px;
+      max-width: 238px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 28px;
+    }
+    .language-buttons {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 3px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(18,23,32,.78);
+    }
+    .lang-choice {
+      min-width: 34px;
+      min-height: 30px;
+      padding: 5px 8px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .lang-choice:hover {
+      color: var(--text);
+      border-color: rgba(255,255,255,.10);
+    }
+    .lang-choice.active {
+      color: #061018;
+      background: var(--cyan);
+      border-color: var(--cyan);
+      box-shadow: 0 0 14px rgba(0,212,255,.20);
+    }
+    .btn {
+      min-height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(18,23,32,.78);
+      color: var(--text);
+      padding: 7px 11px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: .16s ease;
+      white-space: nowrap;
+    }
+    .btn:hover { border-color: rgba(0,212,255,.55); color: white; box-shadow: 0 0 16px rgba(0,212,255,.10); }
+    .btn.primary { background: var(--cyan); border-color: var(--cyan); color: #061018; box-shadow: 0 0 20px rgba(0,212,255,.20); }
+    .btn.primary:hover { background: #62e5ff; }
+    .btn.danger { color: #ff9aa2; border-color: rgba(255,100,112,.35); }
+    .layout {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 24px 22px 64px;
+      display: grid;
+      grid-template-columns: 248px minmax(0,1fr);
+      gap: 24px;
+    }
+    .sidebar {
+      position: sticky;
+      top: 78px;
+      align-self: start;
+      display: grid;
+      gap: 14px;
+    }
+    .profile-switch {
+      border: 1px solid var(--line);
+      background: rgba(17,23,32,.68);
+      box-shadow: 0 0 24px rgba(0,212,255,.06);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .seg { display: grid; gap: 6px; }
+    .seg button {
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-weight: 750;
+      font-size: 13px;
+    }
+    .seg button.active {
+      background: rgba(0,212,255,.12);
+      color: var(--cyan);
+      border-color: rgba(0,212,255,.28);
+    }
+    .nav {
+      border: 1px solid var(--line);
+      background: rgba(17,23,32,.68);
+      box-shadow: 0 0 24px rgba(0,212,255,.06);
+      border-radius: 8px;
+      padding: 8px;
+      display: grid;
+      gap: 2px;
+    }
+    .nav a {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 10px;
+      border-radius: 7px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .nav a:hover, .nav a.active { background: #202631; color: var(--text); }
+    .dot { width: 8px; height: 8px; border-radius: 99px; background: var(--faint); flex: 0 0 auto; }
+    .nav a.active .dot { background: var(--cyan); box-shadow: 0 0 12px rgba(0,212,255,.7); }
+    .main { min-width: 0; display: grid; gap: 18px; }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px;
+      min-height: 320px;
+      display: grid;
+      align-items: end;
+      background:
+        linear-gradient(120deg, rgba(6,9,13,.94), rgba(8,12,17,.64) 48%, rgba(8,12,17,.22)),
+        url("https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=1800&q=80") center/cover;
+      box-shadow: var(--shadow), 0 0 42px rgba(0,212,255,.12), inset 0 0 80px rgba(0,212,255,.06);
+    }
+    .hero:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(0,212,255,.12), transparent 26%, rgba(216,27,255,.08) 78%, transparent),
+        radial-gradient(circle at 18% 28%, rgba(0,212,255,.18), transparent 22%);
+      pointer-events: none;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      padding: 34px;
+      max-width: 860px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--cyan);
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    h1 {
+      margin: 0;
+      max-width: 820px;
+      font-size: clamp(34px, 4.8vw, 64px);
+      line-height: .98;
+      letter-spacing: 0;
+      text-shadow: 0 0 32px rgba(0,212,255,.18), 0 0 42px rgba(216,27,255,.10);
+    }
+    .lead {
+      margin: 16px 0 0;
+      max-width: 800px;
+      color: #d4dbe7;
+      font-size: 18px;
+      line-height: 1.55;
+    }
+    .hero-actions { margin-top: 22px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .profile-tabs-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+    }
+    .profile-tabs {
+      display: flex;
+      gap: 6px;
+      width: fit-content;
+      max-width: 100%;
+      padding: 5px;
+      overflow-x: auto;
+      background: rgba(17,23,32,.70);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 10px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .profile-tab-button {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 8px 15px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 13px;
+      font-weight: 750;
+      text-decoration: none;
+      transition: color .15s ease, border-color .15s ease, background .15s ease;
+      white-space: nowrap;
+    }
+    .profile-tab-button:hover {
+      color: var(--text);
+      border-color: rgba(255,255,255,.10);
+    }
+    .profile-tab-button.active {
+      color: var(--cyan);
+      background: rgba(0,212,255,.12);
+      border-color: rgba(0,212,255,.42);
+      box-shadow: 0 0 18px rgba(0,212,255,.14), 0 0 28px rgba(216,27,255,.06);
+    }
+    .profile-tabs-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .panel, .card {
+      border: 1px solid var(--line);
+      background: rgba(18,22,30,.78);
+      border-radius: 8px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 12px 35px rgba(0,0,0,.20), 0 0 24px rgba(0,212,255,.045);
+    }
+    .panel { padding: 20px; }
+    .section-title {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    h2 { margin: 0; font-size: 22px; line-height: 1.2; letter-spacing: 0; }
+    h3 { margin: 0; font-size: 15px; letter-spacing: 0; }
+    .muted { color: var(--muted); }
+    .tiny { color: var(--faint); font-size: 12px; line-height: 1.45; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+    .metric {
+      padding: 16px;
+      border-radius: 8px;
+      background: rgba(13,18,26,.82);
+      border: 1px solid #253041;
+      min-height: 112px;
+    }
+    .metric label { display: block; color: var(--muted); font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+    .metric .value { font-size: 28px; font-weight: 850; line-height: 1; }
+    .metric .sub { margin-top: 8px; color: var(--faint); font-size: 12px; }
+    .metric.green { border-color: rgba(53,208,127,.35); }
+    .metric.yellow { border-color: rgba(246,195,80,.35); }
+    .metric.red { border-color: rgba(255,100,112,.35); }
+    .metric.cyan { border-color: rgba(0,212,255,.35); }
+    .public-badge {
+      position: relative;
+      overflow: hidden;
+      min-height: 230px;
+      border-color: rgba(0,212,255,.40);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(0,212,255,.18), transparent 34%),
+        radial-gradient(circle at 92% 8%, rgba(216,27,255,.16), transparent 32%),
+        rgba(18,22,30,.84);
+      box-shadow: 0 18px 50px rgba(0,0,0,.28), 0 0 42px rgba(0,212,255,.10), inset 0 0 70px rgba(0,212,255,.04);
+    }
+    .public-badge-grid {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) 320px;
+      gap: 18px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    .badge-score {
+      font-size: clamp(48px, 8vw, 92px);
+      line-height: .9;
+      font-weight: 900;
+      color: var(--cyan);
+      text-shadow: 0 0 32px rgba(0,212,255,.25), 0 0 44px rgba(216,27,255,.12);
+    }
+    .badge-side {
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(8,12,18,.66);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .score-row {
+      display: grid;
+      grid-template-columns: 190px minmax(0,1fr) 72px;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .score-row:last-child { border-bottom: 0; }
+    .bar {
+      height: 9px;
+      border-radius: 99px;
+      overflow: hidden;
+      background: #0e1218;
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    .bar i { display: block; height: 100%; border-radius: 99px; width: 0%; background: var(--cyan); }
+    .bar.red i { background: var(--red); }
+    .bar.yellow i { background: var(--yellow); }
+    .bar.green i { background: var(--green); }
+    .bar.high i { background: linear-gradient(90deg, var(--green), var(--cyan)); }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .tab {
+      border: 1px solid var(--line);
+      background: rgba(13,18,26,.82);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 750;
+    }
+    .tab.active { color: #061018; background: var(--cyan); border-color: var(--cyan); }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+    .field {
+      display: grid;
+      gap: 6px;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(13,18,26,.82);
+      border: 1px solid #242d3b;
+    }
+    .field.required label:after { content: " *"; color: var(--cyan); }
+    .field label { color: #dbe4f0; font-size: 13px; font-weight: 720; }
+    .field small { color: var(--faint); line-height: 1.35; }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid #354052;
+      background: rgba(8,12,18,.86);
+      color: var(--text);
+      border-radius: 7px;
+      padding: 9px 10px;
+      outline: none;
+      min-height: 38px;
+    }
+    textarea { min-height: 92px; resize: vertical; }
+    input:focus, textarea:focus, select:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,212,255,.1); }
+    .section-pane { display: none; }
+    .section-pane.active { display: block; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 99px;
+      background: rgba(13,18,26,.82);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .pill.green { color: var(--green); border-color: rgba(53,208,127,.35); }
+    .pill.yellow { color: var(--yellow); border-color: rgba(246,195,80,.35); }
+    .pill.red { color: var(--red); border-color: rgba(255,100,112,.35); }
+    .pill.cyan { color: var(--cyan); border-color: rgba(0,212,255,.35); }
+    .list { display: grid; gap: 10px; }
+    .item {
+      padding: 14px;
+      border-radius: 8px;
+      background: rgba(13,18,26,.82);
+      border: 1px solid #242d3b;
+    }
+    .item-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .roadmap-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+    .roadmap-col { display: grid; gap: 10px; align-content: start; }
+    .roadmap-title { color: var(--cyan); font-size: 13px; font-weight: 850; text-transform: uppercase; letter-spacing: .06em; }
+    .footer-note {
+      padding: 16px 20px;
+      color: var(--muted);
+      border-left: 3px solid var(--cyan);
+      background: rgba(0,212,255,.06);
+      line-height: 1.55;
+      border-radius: 8px;
+    }
+    .site-footer {
+      position: relative;
+      z-index: 2;
+      border-top: 1px solid rgba(0,212,255,.16);
+      background: rgba(8,10,14,.88);
+      margin-top: 12px;
+    }
+    .site-footer-inner {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 26px 22px;
+      display: grid;
+      grid-template-columns: minmax(0,1.2fr) minmax(0,.8fr);
+      gap: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .site-footer a { color: var(--cyan); text-decoration: none; }
+    .file-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid #242d3b;
+      background: rgba(13,18,26,.82);
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+    .hidden { display: none !important; }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; padding-top: 14px; }
+      .sidebar { position: static; }
+      .nav { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .grid-4, .grid-3, .roadmap-grid { grid-template-columns: 1fr 1fr; }
+      .public-badge-grid, .site-footer-inner { grid-template-columns: 1fr; }
+      .hero-content { padding: 26px; }
+      .profile-tabs-row { justify-content: stretch; }
+      .profile-tabs { width: 100%; }
+      .profile-tab-button { flex: 1 0 auto; }
+      .profile-tabs-note { width: 100%; text-align: center; }
+    }
+    @media (max-width: 680px) {
+      .topbar-inner { align-items: flex-start; flex-direction: column; }
+      .brand { min-width: 0; }
+      .layout { padding-left: 14px; padding-right: 14px; }
+      .nav, .grid-4, .grid-3, .grid-2, .form-grid, .roadmap-grid { grid-template-columns: 1fr; }
+      .score-row { grid-template-columns: 1fr; gap: 7px; }
+      h1 { font-size: 36px; }
+      .lead { font-size: 16px; }
+      .hero { min-height: 360px; }
+    }
+    @media print {
+      body { background: white; color: #111; }
+      .topbar, .sidebar, .hero-actions, .tabs, .no-print { display: none !important; }
+      .layout { display: block; max-width: none; padding: 0; }
+      .hero, .panel, .card, .metric, .item, .field, .footer-note { box-shadow: none; background: white; color: #111; border-color: #ccc; }
+      .section-pane { display: block !important; }
+      .muted, .tiny { color: #444; }
+    }
+  </style>
+</head>
+<body>
+<canvas id="neural-bg"></canvas>
+<div class="scroll-shade" aria-hidden="true"></div>
+<div class="app">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/valiq-enterprise/">
+        <img src="/logo.png" alt="BizDNAi" onerror="this.style.display='none'">
+        <span class="brand-mark">VQ</span>
+        <span class="brand-text"><strong>ValIQ Enterprise</strong><span>Manufacturing readiness index</span></span>
+      </a>
+      <div class="top-actions">
+        <select class="btn company-select" id="companySelect" aria-label="Компания"></select>
+        <div class="language-buttons" id="languageButtons" aria-label="Language selector">
+          <button class="lang-choice" type="button" data-lang-choice="en">EN</button>
+          <button class="lang-choice" type="button" data-lang-choice="ru">RU</button>
+          <button class="lang-choice" type="button" data-lang-choice="kz">KZ</button>
+        </div>
+        <button class="btn" id="copyCompanyBtn" type="button">Копировать оценку</button>
+        <button class="btn primary" id="saveSnapshotBtn" type="button">Сохранить оценку</button>
+        <button class="btn" id="printBtn" type="button">Экспорт PDF</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="profile-switch">
+        <div class="tiny" style="margin:0 0 8px 2px;">Профиль оценки</div>
+        <div class="seg">
+          <button type="button" data-profile="MANUFACTURING_ENTERPRISE" class="active">MANUFACTURING_ENTERPRISE</button>
+          <a class="btn" href="/valiq/" style="justify-content:flex-start;">IT_AI_PRODUCT</a>
+        </div>
+      </div>
+      <nav class="nav" id="sideNav">
+        <a href="#overview" class="active"><span class="dot"></span>Обзор</a>
+        <a href="#questionnaire"><span class="dot"></span>Анкета</a>
+        <a href="#finance"><span class="dot"></span>Финансы</a>
+        <a href="#production"><span class="dot"></span>Производство</a>
+        <a href="#quality"><span class="dot"></span>Качество</a>
+        <a href="#people"><span class="dot"></span>Люди и знания</a>
+        <a href="#digital"><span class="dot"></span>Цифровые активы</a>
+        <a href="#integrations"><span class="dot"></span>Интеграции</a>
+        <a href="#documents"><span class="dot"></span>Документы</a>
+        <a href="#recommendations"><span class="dot"></span>Рекомендации</a>
+        <a href="#roadmap"><span class="dot"></span>Дорожная карта</a>
+        <a href="#history"><span class="dot"></span>История оценок</a>
+        <a href="#reports"><span class="dot"></span>Отчеты</a>
+        <a href="#access"><span class="dot"></span>Доступ</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <section class="hero" id="overview">
+        <div class="hero-content">
+          <div class="profile-tabs-row" aria-label="ValIQ profile selector">
+            <div class="profile-tabs" role="tablist" aria-label="ValIQ profiles">
+              <a class="profile-tab-button" href="/valiq/" role="tab" aria-selected="false">IT_AI_PRODUCT</a>
+              <a class="profile-tab-button active" href="/valiq-enterprise/" role="tab" aria-selected="true">MANUFACTURING_ENTERPRISE</a>
+            </div>
+            <div class="profile-tabs-note" id="profileTabsNote">Выберите профиль ValIQ</div>
+          </div>
+          <div class="eyebrow" id="heroEyebrow">Индекс инвестиционной готовности предприятия</div>
+          <h1 id="heroTitle">ValIQ помогает строить стратегию роста ценности предприятия.</h1>
+          <p class="lead" id="heroLead">Показывает не только ориентировочный диапазон стоимости бизнеса, но и что именно необходимо изменить, чтобы предприятие стало более управляемым, масштабируемым и привлекательным для инвесторов.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#questionnaire" id="heroFormBtn">Заполнить анкету</a>
+            <a class="btn" href="#roadmap" id="heroRoadmapBtn">Открыть дорожную карту</a>
+            <span class="pill cyan" id="methodologyBadge">Methodology ME-2026.07 v1</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel public-badge" id="publicBadge">
+        <div class="public-badge-grid">
+          <div>
+            <div class="eyebrow">Публичный бейдж ValIQ Enterprise</div>
+            <h2 style="font-size:clamp(28px,4vw,44px);max-width:760px;">Инвестиционная готовность в одном понятном сигнале</h2>
+            <p class="lead" style="font-size:16px;max-width:760px;">Бейдж показывает индекс, диапазон стоимости, достоверность и потенциал роста. Для внешнего режима собственник сам выбирает, что раскрывать: PRIVATE, SHARED_BY_LINK или PUBLIC.</p>
+            <div class="hero-actions">
+              <a class="btn primary" href="/index/app/">Перейти в кабинет</a>
+              <a class="btn" href="#questionnaire">Заполнить демо-анкету</a>
+            </div>
+          </div>
+          <div class="badge-side">
+            <p class="tiny" style="text-transform:uppercase;letter-spacing:.08em;">Индекс инвестиционной готовности</p>
+            <div class="badge-score" id="publicBadgeScore">0</div>
+            <p id="publicBadgeZone" class="pill cyan">предварительный</p>
+            <div style="height:8px;background:#0f1115;border:1px solid #253041;border-radius:99px;overflow:hidden;margin:14px 0;">
+              <i id="publicBadgeBar" style="display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--cyan),var(--magenta));"></i>
+            </div>
+            <div class="item" style="margin-top:10px;">
+              <div class="tiny">Оценочный диапазон стоимости предприятия</div>
+              <strong id="publicBadgeValuation" style="display:block;margin-top:4px;color:#fff;font-size:20px;">$0 - $0</strong>
+              <div class="tiny" id="publicBadgeConfidence">Достоверность: предварительный</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <div>
+            <h2>Dashboard</h2>
+            <div class="tiny" id="statusLine">Черновик автоматически сохраняется локально.</div>
+          </div>
+          <div class="top-actions">
+            <span class="pill" id="questionnaireStatus">DRAFT</span>
+            <span class="pill" id="visibilityPill">PRIVATE</span>
+            <span class="pill" id="confidencePill">предварительный</span>
+          </div>
+        </div>
+        <div class="grid-4">
+          <div class="metric cyan">
+            <label>Текущий индекс</label>
+            <div class="value" id="scoreValue">0 / 1000</div>
+            <div class="sub" id="scoreZone">Красная зона</div>
+          </div>
+          <div class="metric green">
+            <label>Потенциальный индекс</label>
+            <div class="value" id="potentialValue">0</div>
+            <div class="sub">После приоритетных действий</div>
+          </div>
+          <div class="metric yellow">
+            <label>Оценочный диапазон стоимости предприятия</label>
+            <div class="value" id="valuationValue">$0 - $0</div>
+            <div class="sub" id="valuationSub">Предварительный расчет</div>
+          </div>
+          <div class="metric">
+            <label>Заполнение анкеты</label>
+            <div class="value" id="completionValue">0%</div>
+            <div class="sub" id="accuracyValue">Точность: низкая</div>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top:12px;">
+          <div class="card" style="padding:16px;">
+            <h3>Разбивка по блокам</h3>
+            <div id="blockBreakdown" style="margin-top:10px;"></div>
+          </div>
+          <div class="card" style="padding:16px;">
+            <h3>Три сильные стороны / три ограничения</h3>
+            <div class="grid-2" style="margin-top:10px;">
+              <div class="list" id="strengthList"></div>
+              <div class="list" id="constraintList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="questionnaire">
+        <div class="section-title">
+          <div>
+            <h2>Анкета предприятия</h2>
+            <div class="tiny">Разделы можно заполнять в любом порядке. Каждое изменение сохраняется как черновик и попадает в историю изменений.</div>
+          </div>
+          <div class="top-actions">
+            <button class="btn" type="button" id="submitBtn">SUBMITTED</button>
+            <button class="btn" type="button" id="verifyBtn">VERIFIED</button>
+          </div>
+        </div>
+        <div class="tabs" id="formTabs"></div>
+        <form id="assessmentForm"></form>
+      </section>
+
+      <section class="panel" id="finance">
+        <div class="section-title">
+          <div>
+            <h2>Финансовый слой и оценочный диапазон</h2>
+            <div class="tiny">Формулы и веса вынесены в конфигурацию методологии внутри приложения.</div>
+          </div>
+          <span class="pill cyan">Income + Comparable + Asset + Mixed</span>
+        </div>
+        <div class="grid-3">
+          <div class="metric"><label>Базовый диапазон</label><div class="value" id="baseRange">$0 - $0</div><div class="sub">EBITDA, активы и выручка</div></div>
+          <div class="metric"><label>Итоговый коэффициент</label><div class="value" id="totalCoef">1.00x</div><div class="sub">Качество финансов, управляемость, масштаб, цифра, риски</div></div>
+          <div class="metric"><label>Достоверность данных</label><div class="value" id="dataQuality">0%</div><div class="sub">SELF / SYSTEM / EXPERT</div></div>
+        </div>
+        <div class="list" id="coefList" style="margin-top:12px;"></div>
+      </section>
+
+      <section class="panel" id="production">
+        <div class="section-title"><h2>Производство</h2><span class="pill" id="productionScore">0 / 100</span></div>
+        <div class="list" id="productionInsights"></div>
+      </section>
+
+      <section class="panel" id="quality">
+        <div class="section-title"><h2>Качество</h2><span class="pill" id="qualityScore">0 / 100</span></div>
+        <div class="list" id="qualityInsights"></div>
+      </section>
+
+      <section class="panel" id="people">
+        <div class="section-title"><h2>Люди и знания</h2><span class="pill" id="peopleScore">0 / 100</span></div>
+        <div class="list" id="peopleInsights"></div>
+      </section>
+
+      <section class="panel" id="digital">
+        <div class="section-title"><h2>Цифровой капитал</h2><span class="pill" id="digitalScore">0 / 100</span></div>
+        <div class="list" id="digitalInsights"></div>
+      </section>
+
+      <section class="panel" id="integrations">
+        <div class="section-title">
+          <div><h2>Интеграции и источники данных</h2><div class="tiny">Источники хранят статус, период, полноту, качество и дату синхронизации.</div></div>
+        </div>
+        <div class="grid-3" id="sourceGrid"></div>
+      </section>
+
+      <section class="panel" id="documents">
+        <div class="section-title">
+          <div><h2>Документы и вложения</h2><div class="tiny">MVP хранит метаданные документов локально: имя, тип и размер. Файлы не отправляются на сервер.</div></div>
+        </div>
+        <input type="file" id="docInput" multiple>
+        <div id="docList"></div>
+      </section>
+
+      <section class="panel" id="recommendations">
+        <div class="section-title"><h2>Рекомендации</h2><span class="pill cyan" id="recommendationCount">0 действий</span></div>
+        <div class="list" id="recommendationList"></div>
+      </section>
+
+      <section class="panel" id="roadmap">
+        <div class="section-title"><h2>Стратегическая дорожная карта</h2><span class="pill">30 дней / 90 дней / 12 месяцев</span></div>
+        <div class="roadmap-grid" id="roadmapGrid"></div>
+      </section>
+
+      <section class="panel" id="history">
+        <div class="section-title">
+          <div><h2>История оценок</h2><div class="tiny">Сохраненные снимки позволяют сравнивать периоды и видеть, какие действия улучшили индекс.</div></div>
+          <button class="btn danger" id="clearHistoryBtn" type="button">Очистить историю</button>
+        </div>
+        <div class="list" id="historyList"></div>
+      </section>
+
+      <section class="panel" id="reports">
+        <div class="section-title">
+          <div><h2>Отчеты</h2><div class="tiny">Экспорт PDF выполняется через системную печать браузера. В отчете фиксируются версия методологии, дата и достоверность.</div></div>
+          <button class="btn primary" type="button" onclick="window.print()">Сформировать PDF-отчет</button>
+        </div>
+        <div class="footer-note">
+          ValIQ не заменяет лицензированную оценку бизнеса. Результат представляет собой независимую аналитическую модель, основанную на финансовых данных, операционных показателях, цифровой зрелости и подтверждённых источниках информации. Отчёт предназначен для внутреннего управления, стратегического планирования, подготовки к переговорам с инвесторами и отслеживания динамики развития предприятия.
+        </div>
+      </section>
+
+      <section class="panel" id="access">
+        <div class="section-title"><h2>Доступ и публичный режим</h2><span class="pill">PRIVATE / SHARED_BY_LINK / PUBLIC</span></div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Режим публикации</label>
+            <select id="visibilityMode">
+              <option value="PRIVATE">PRIVATE</option>
+              <option value="SHARED_BY_LINK">SHARED_BY_LINK</option>
+              <option value="PUBLIC">PUBLIC</option>
+            </select>
+            <small>Пользователь выбирает, что раскрывать во внешнем режиме.</small>
+          </div>
+          <div class="field">
+            <label>Роль пользователя</label>
+            <select id="userRole">
+              <option>OWNER</option><option>ADMIN</option><option>FINANCE</option><option>PRODUCTION</option><option>HR</option><option>AUDITOR</option><option>VIEWER</option>
+            </select>
+            <small>Роль сохраняется в карточке компании.</small>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div>
+      <strong style="color:#fff;">BizDNAi · ValIQ Enterprise</strong>
+      <p style="margin:8px 0 0;">Индекс инвестиционной готовности предприятия: оценочный диапазон стоимости, операционная зрелость, цифровой капитал, рекомендации и дорожная карта роста ценности.</p>
+      <p class="tiny" style="margin:10px 0 0;">ValIQ не заменяет лицензированную оценку бизнеса и не обещает привлечение инвестиций. Результат является независимой аналитической моделью.</p>
+    </div>
+    <div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-start;">
+        <a href="/">Главная</a>
+        <a href="/valiq/">ValIQ IT/AI</a>
+        <a href="/metrics/">Метрики</a>
+        <a href="/index/app/">Кабинет</a>
+      </div>
+      <p class="tiny" style="margin-top:12px;">Methodology: ME-2026.07 v1 · Profiles: IT_AI_PRODUCT / MANUFACTURING_ENTERPRISE</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+const METHODOLOGY = {
+  version: "ME-2026.07-v1",
+  profiles: ["IT_AI_PRODUCT", "MANUFACTURING_ENTERPRISE", "SERVICE_COMPANY", "LOGISTICS_COMPANY", "RETAIL_COMPANY"],
+  activeProfile: "MANUFACTURING_ENTERPRISE",
+  zones: [
+    { min: 0, max: 399, key: "red", label: "красная зона" },
+    { min: 400, max: 699, key: "yellow", label: "желтая зона" },
+    { min: 700, max: 849, key: "green", label: "зеленая зона" },
+    { min: 850, max: 1000, key: "high", label: "высокая инвестиционная готовность" }
+  ],
+  confidence: [
+    { key: "preliminary", label: "предварительный" },
+    { key: "data_confirmed", label: "подтвержденный данными" },
+    { key: "expert_verified", label: "экспертно верифицированный" }
+  ],
+  weights: {
+    finance: .24,
+    operations: .20,
+    quality: .11,
+    people: .10,
+    digital: .14,
+    scalability: .12,
+    ownerRisk: .09
+  },
+  coefficients: {
+    financialQuality: { min: .86, max: 1.12 },
+    manageability: { min: .88, max: 1.10 },
+    scalability: { min: .88, max: 1.13 },
+    digitalMaturity: { min: .90, max: 1.11 },
+    risk: { min: .84, max: 1.08 }
+  }
+};
+
+const SECTIONS = [
+  {
+    id: "company", title: "Карточка компании", anchor: "questionnaire",
+    fields: [
+      f("company.name","Название","text","ТОО Пример Производство",true),
+      f("company.country","Страна","text","Kazakhstan",true),
+      f("company.industry","Отрасль","text","Металлообработка",true),
+      f("company.productionType","Тип производства","select","",true,["серийное","проектное","единичное","непрерывное","смешанное"]),
+      f("company.legalForm","Юридическая форма","text","ТОО",true),
+      f("company.size","Размер компании","select","",true,["micro","small","medium","large"]),
+      f("company.employees","Сотрудники","number","85",true),
+      f("company.founded","Год основания","number","2016",false),
+      f("company.currency","Валюта","select","USD",true,["USD","KZT","EUR"]),
+      f("company.website","Сайт","url","https://example.kz",false),
+      f("company.contact","Контактное лицо","text","",false),
+      f("company.role","Роль пользователя","select","OWNER",true,["OWNER","ADMIN","FINANCE","PRODUCTION","HR","AUDITOR","VIEWER"]),
+      f("company.logo","Логотип URL","url","",false),
+      f("company.description","Описание","textarea","",false)
+    ]
+  },
+  {
+    id: "financial", title: "Финансы", anchor: "finance",
+    fields: [
+      f("financial.revenue","Выручка за год","number","1200000",true,"", "SELF_REPORTED"),
+      f("financial.ebitda","EBITDA","number","210000",true,"", "SELF_REPORTED"),
+      f("financial.operatingProfit","Операционная прибыль","number","160000",false),
+      f("financial.netProfit","Чистая прибыль","number","115000",true),
+      f("financial.cashFlow","Операционный денежный поток","number","135000",true),
+      f("financial.assets","Активы","number","780000",true),
+      f("financial.liabilities","Обязательства","number","310000",true),
+      f("financial.loans","Кредиты","number","180000",false),
+      f("financial.interestBurden","Процентная нагрузка","number","28000",false),
+      f("financial.receivablesDays","Срок дебиторки, дней","number","52",true),
+      f("financial.payablesDays","Срок кредиторки, дней","number","41",false),
+      f("financial.inventoryDays","Оборачиваемость запасов, дней","number","64",true),
+      f("financial.cogs","Себестоимость","number","760000",false),
+      f("financial.payroll","ФОТ","number","230000",false),
+      f("financial.capex","CAPEX","number","90000",false),
+      f("financial.opex","OPEX","number","610000",false),
+      f("financial.taxes","Налоги","number","46000",false),
+      f("financial.workingCapital","Оборотный капитал","number","220000",false),
+      f("financial.revenueGrowth","Рост выручки за год, %","number","14",true),
+      f("financial.marginStability","Стабильность маржи 0-10","number","6",true),
+      f("financial.clientConcentration","Доля топ-1 клиента, %","number","28",true),
+      f("financial.seasonality","Сезонность 0-10, где 10 низкая","number","6",false),
+      f("financial.interestCoverage","Покрытие процентов","number","5.7",false),
+      f("financial.roa","Рентабельность активов, %","number","14",false)
+    ]
+  },
+  {
+    id: "operations", title: "Производство", anchor: "production",
+    fields: [
+      f("operations.planExecution","Выполнение плана, %","number","86",true),
+      f("operations.outputPerShift","Выпуск за смену, % от целевого","number","78",true),
+      f("operations.cycleDays","Производственный цикл, дней","number","12",true),
+      f("operations.equipmentUtilization","Загрузка оборудования, %","number","72",true),
+      f("operations.downtime","Простои, % времени","number","9",true),
+      f("operations.bottleneckControl","Контроль узких мест 0-10","number","5",true),
+      f("operations.wipControl","Контроль НЗП 0-10","number","6",false),
+      f("operations.automatedOps","Автоматизированные операции, %","number","38",true),
+      f("operations.planningAccuracy","Точность планирования, %","number","74",true),
+      f("operations.digitalOperationCapture","Цифровая фиксация операций, %","number","45",true)
+    ]
+  },
+  {
+    id: "quality", title: "Качество", anchor: "quality",
+    fields: [
+      f("quality.defectRate","Брак, %","number","4.8",true),
+      f("quality.reworkRate","Переделки, %","number","7",true),
+      f("quality.defectCost","Стоимость брака","number","52000",false),
+      f("quality.claims","Рекламации за год","number","18",true),
+      f("quality.repeatDefects","Повторяемость дефектов 0-10, где 10 низкая","number","5",true),
+      f("quality.resolutionTime","Время устранения, дней","number","6",false),
+      f("quality.fullControl","Полный контроль качества, % партий","number","68",true),
+      f("quality.digitalPassport","Цифровой паспорт изделия, %","number","32",true),
+      f("quality.traceEmployeeMaterial","Прослеживаемость сотрудника и материала, %","number","44",true)
+    ]
+  },
+  {
+    id: "people", title: "Люди и знания", anchor: "people",
+    fields: [
+      f("people.keyDependency","Зависимость от ключевых сотрудников, % процессов","number","46",true),
+      f("people.onboardingDays","Адаптация новичка, дней","number","34",true),
+      f("people.mentors","Наставники, человек","number","4",false),
+      f("people.knowledgeBase","База знаний, % процессов","number","42",true),
+      f("people.digitalInstructions","Цифровые инструкции, % операций","number","36",true),
+      f("people.trainingMaterials","Обучающие материалы, % ролей","number","55",false),
+      f("people.trainingImpact","Динамика после обучения 0-10","number","6",false),
+      f("people.turnover","Текучесть, % год","number","16",true),
+      f("people.teamProductivity","Производительность команд 0-10","number","6",true),
+      f("people.speedQualityBalance","Скорость + качество 0-10","number","6",true)
+    ]
+  },
+  {
+    id: "digital", title: "Цифровой капитал", anchor: "digital",
+    fields: [
+      f("digital.orderHistory","История заказов, лет","number","3",true),
+      f("digital.customerBase","Клиентская база структурирована, %","number","64",true),
+      f("digital.supplierBase","База поставщиков структурирована, %","number","58",true),
+      f("digital.productPassports","Цифровые паспорта изделий, %","number","34",true),
+      f("digital.operationHistory","История операций, %","number","48",true),
+      f("digital.qualityStats","Статистика качества, %","number","52",true),
+      f("digital.knowledgeBase","База знаний, %","number","42",false),
+      f("digital.trainingVideos","Обучающие видео, % ролей","number","28",false),
+      f("digital.standards","Стандарты оцифрованы, %","number","45",false),
+      f("digital.instructions","Цифровые инструкции, %","number","36",true),
+      f("digital.performanceAnalytics","Аналитика производительности, %","number","41",true),
+      f("digital.defectData","Данные о браке, %","number","58",true),
+      f("digital.improvementHistory","История улучшений, %","number","30",false),
+      f("digital.integrations","Интеграции, количество","number","3",true),
+      f("digital.dataCompleteness","Полнота данных, %","number","61",true),
+      f("digital.dataStructure","Структура данных 0-10","number","6",true),
+      f("digital.dataReliability","Достоверность данных 0-10","number","6",true),
+      f("digital.auditAvailability","Доступность данных для аудита, %","number","54",true)
+    ]
+  },
+  {
+    id: "scalability", title: "Масштабируемость", anchor: "roadmap",
+    fields: [
+      f("scalability.withoutOwner","Работа без собственника 30 дней 0-10","number","5",true),
+      f("scalability.secondShift","Готовность второй смены 0-10","number","6",true),
+      f("scalability.newSiteRepeatability","Повторяемость на новой площадке 0-10","number","4",true),
+      f("scalability.newProductLaunch","Запуск нового продукта 0-10","number","5",true),
+      f("scalability.standardization","Стандартизация процессов, %","number","50",true),
+      f("scalability.adminLeverage","Рост без пропорционального роста администрации 0-10","number","5",false),
+      f("scalability.backupSuppliers","Резервные поставщики, % критичных позиций","number","47",true),
+      f("scalability.keyPersonResilience","Устойчивость к уходу ключевого сотрудника 0-10","number","5",true)
+    ]
+  },
+  {
+    id: "sources", title: "Источники и аудит", anchor: "integrations",
+    fields: [
+      f("sources.accounting","Бухгалтерия","select","SELF_REPORTED",true,["SELF_REPORTED","SYSTEM_VERIFIED","EXPERT_VERIFIED"]),
+      f("sources.bank","Банковские данные","select","SELF_REPORTED",false,["SELF_REPORTED","SYSTEM_VERIFIED","EXPERT_VERIFIED"]),
+      f("sources.erp","ERP / 1C","select","SELF_REPORTED",true,["SELF_REPORTED","SYSTEM_VERIFIED","EXPERT_VERIFIED"]),
+      f("sources.crm","CRM","select","SELF_REPORTED",false,["SELF_REPORTED","SYSTEM_VERIFIED","EXPERT_VERIFIED"]),
+      f("sources.warehouse","Склад","select","SELF_REPORTED",true,["SELF_REPORTED","SYSTEM_VERIFIED","EXPERT_VERIFIED"]),
+      f("sources.quality","Контроль качества","select","SELF_REPORTED",true,["SELF_REPORTED","SYSTEM_VERIFIED","EXPERT_VERIFIED"]),
+      f("sources.hr","HR","select","SELF_REPORTED",false,["SELF_REPORTED","SYSTEM_VERIFIED","EXPERT_VERIFIED"]),
+      f("sources.syncDate","Дата последней синхронизации","date","",false),
+      f("sources.period","Период данных","text","2023-2026",false),
+      f("sources.syncQuality","Качество синхронизации, %","number","62",false)
+    ]
+  }
+];
+
+function f(path, label, type, placeholder, required, options, source) {
+  return { path, label, type, placeholder, required: !!required, options: Array.isArray(options) ? options : null, source: source || "SELF_REPORTED" };
+}
+
+const LS = "valiq_manufacturing_mvp_v1";
+const state = loadState();
+let activeSection = SECTIONS[0].id;
+
+const I18N = {
+  ru: {
+    title: "ValIQ - Индекс инвестиционной готовности предприятия",
+    heroEyebrow: "Индекс инвестиционной готовности предприятия",
+    heroTitle: "ValIQ помогает строить стратегию роста ценности предприятия.",
+    heroLead: "Показывает не только ориентировочный диапазон стоимости бизнеса, но и что именно необходимо изменить, чтобы предприятие стало более управляемым, масштабируемым и привлекательным для инвесторов.",
+    heroFormBtn: "Заполнить анкету",
+    heroRoadmapBtn: "Открыть дорожную карту",
+    nav: ["Обзор","Анкета","Финансы","Производство","Качество","Люди и знания","Цифровые активы","Интеграции","Документы","Рекомендации","Дорожная карта","История оценок","Отчеты","Доступ"],
+    saveSnapshotBtn: "Сохранить оценку",
+    copyCompanyBtn: "Копировать оценку",
+    printBtn: "Экспорт PDF",
+    submitBtn: "SUBMITTED",
+    verifyBtn: "VERIFIED",
+    profileTabsNote: "Выберите профиль ValIQ",
+    dashboard: "Dashboard",
+    dashboardNote: "Черновик автоматически сохраняется локально.",
+    score: "Текущий индекс",
+    potential: "Потенциальный индекс",
+    valuation: "Оценочный диапазон стоимости предприятия",
+    completion: "Заполнение анкеты"
+  },
+  en: {
+    title: "ValIQ - Enterprise Investment Readiness Index",
+    heroEyebrow: "Enterprise Investment Readiness Index",
+    heroTitle: "ValIQ helps build a strategy for growing enterprise value.",
+    heroLead: "Shows not only an indicative business value range, but also what must change for the enterprise to become more manageable, scalable, and attractive to investors.",
+    heroFormBtn: "Fill Questionnaire",
+    heroRoadmapBtn: "Open Roadmap",
+    nav: ["Overview","Questionnaire","Finance","Production","Quality","People & Knowledge","Digital Assets","Integrations","Documents","Recommendations","Roadmap","Assessment History","Reports","Access"],
+    saveSnapshotBtn: "Save Assessment",
+    copyCompanyBtn: "Copy Assessment",
+    printBtn: "Export PDF",
+    submitBtn: "SUBMITTED",
+    verifyBtn: "VERIFIED",
+    profileTabsNote: "Choose a ValIQ profile",
+    dashboard: "Dashboard",
+    dashboardNote: "Draft is autosaved locally.",
+    score: "Current Index",
+    potential: "Potential Index",
+    valuation: "Indicative Enterprise Value Range",
+    completion: "Questionnaire Completion"
+  },
+  kz: {
+    title: "ValIQ - Кәсіпорынның инвестициялық дайындық индексі",
+    heroEyebrow: "Кәсіпорынның инвестициялық дайындық индексі",
+    heroTitle: "ValIQ кәсіпорын құнын өсіру стратегиясын құруға көмектеседі.",
+    heroLead: "Бизнестің болжамды құн диапазонын ғана емес, кәсіпорын басқарылатын, масштабталатын және инвесторлар үшін тартымды болуы үшін нені өзгерту керегін көрсетеді.",
+    heroFormBtn: "Анкетаны толтыру",
+    heroRoadmapBtn: "Жол картасын ашу",
+    nav: ["Шолу","Анкета","Қаржы","Өндіріс","Сапа","Адамдар және білім","Цифрлық активтер","Интеграциялар","Құжаттар","Ұсынымдар","Жол картасы","Бағалау тарихы","Есептер","Қолжетімділік"],
+    saveSnapshotBtn: "Бағалауды сақтау",
+    copyCompanyBtn: "Бағалауды көшіру",
+    printBtn: "PDF экспорт",
+    submitBtn: "SUBMITTED",
+    verifyBtn: "VERIFIED",
+    profileTabsNote: "ValIQ профилін таңдаңыз",
+    dashboard: "Dashboard",
+    dashboardNote: "Черновик жергілікті түрде автоматты сақталады.",
+    score: "Ағымдағы индекс",
+    potential: "Әлеуетті индекс",
+    valuation: "Кәсіпорын құнының бағалау диапазоны",
+    completion: "Анкетаның толтырылуы"
+  }
+};
+
+function defaultState() {
+  const data = {};
+  SECTIONS.forEach(section => section.fields.forEach(field => setPath(data, field.path, field.placeholder || "")));
+  data.company.name = "Производственное предприятие";
+  return {
+    data,
+    documents: [],
+    history: [],
+    changes: [],
+    status: "DRAFT",
+    visibility: "PRIVATE",
+    currentCompany: "company-1",
+    companies: [{ id: "company-1", name: "Производственное предприятие" }],
+    savedAt: null,
+    lang: "ru"
+  };
+}
+
+function loadState() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(LS) || "null");
+    if (stored && stored.data) return { ...defaultState(), ...stored };
+  } catch(e) {}
+  return defaultState();
+}
+
+function saveState(reason) {
+  state.savedAt = new Date().toISOString();
+  localStorage.setItem(LS, JSON.stringify(state));
+  document.getElementById("statusLine").textContent = "Черновик сохранен: " + new Date().toLocaleString("ru-RU") + (reason ? " / " + reason : "");
+}
+
+function getPath(obj, path) {
+  return path.split(".").reduce((acc, key) => acc ? acc[key] : undefined, obj);
+}
+function setPath(obj, path, value) {
+  const parts = path.split(".");
+  let cursor = obj;
+  parts.slice(0,-1).forEach(part => {
+    if (!cursor[part]) cursor[part] = {};
+    cursor = cursor[part];
+  });
+  cursor[parts[parts.length - 1]] = value;
+}
+function num(path, fallback = 0) {
+  const v = parseFloat(getPath(state.data, path));
+  return Number.isFinite(v) ? v : fallback;
+}
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function scoreHigh(v, best) { return clamp((v / best) * 100, 0, 100); }
+function scoreLow(v, bad, good) {
+  if (v <= good) return 100;
+  if (v >= bad) return 0;
+  return clamp(((bad - v) / (bad - good)) * 100, 0, 100);
+}
+function scoreBand(v, low, high, ideal) {
+  if (v >= ideal) return 100;
+  if (v <= low) return 35;
+  if (v >= high) return 80;
+  return clamp(35 + ((v - low) / (high - low)) * 45, 0, 100);
+}
+function avg(values) {
+  const clean = values.filter(v => Number.isFinite(v));
+  return clean.length ? clean.reduce((a,b) => a + b, 0) / clean.length : 0;
+}
+function money(v, currency) {
+  const c = currency || getPath(state.data, "company.currency") || "USD";
+  if (!Number.isFinite(v)) v = 0;
+  const abs = Math.abs(v);
+  const suffix = abs >= 1000000 ? " млн" : abs >= 1000 ? " тыс" : "";
+  const div = abs >= 1000000 ? 1000000 : abs >= 1000 ? 1000 : 1;
+  return (c === "USD" ? "$" : c + " ") + (v / div).toLocaleString("ru-RU", { maximumFractionDigits: 1 }) + suffix;
+}
+function zone(score) {
+  return METHODOLOGY.zones.find(z => score >= z.min && score <= z.max) || METHODOLOGY.zones[0];
+}
+function blockZone(score100) {
+  if (score100 < 40) return "red";
+  if (score100 < 70) return "yellow";
+  if (score100 < 85) return "green";
+  return "high";
+}
+
+function calculate() {
+  const revenue = num("financial.revenue");
+  const ebitda = num("financial.ebitda");
+  const netProfit = num("financial.netProfit");
+  const cashFlow = num("financial.cashFlow");
+  const assets = num("financial.assets");
+  const liabilities = num("financial.liabilities");
+  const loans = num("financial.loans");
+  const interest = num("financial.interestBurden");
+  const margin = revenue ? ebitda / revenue * 100 : 0;
+  const debtRatio = assets ? liabilities / assets * 100 : 100;
+  const coverage = interest ? ebitda / interest : num("financial.interestCoverage");
+  const financeScore = avg([
+    scoreHigh(num("financial.revenueGrowth"), 25),
+    scoreHigh(margin, 25),
+    scoreHigh(revenue ? netProfit / revenue * 100 : 0, 15),
+    scoreHigh(revenue ? cashFlow / revenue * 100 : 0, 18),
+    scoreLow(debtRatio, 80, 25),
+    scoreHigh(coverage, 8),
+    scoreLow(num("financial.receivablesDays"), 120, 35),
+    scoreLow(num("financial.inventoryDays"), 140, 45),
+    scoreLow(num("financial.clientConcentration"), 70, 15),
+    scoreHigh(num("financial.marginStability"), 10)
+  ]);
+  const operationsScore = avg([
+    scoreHigh(num("operations.planExecution"), 100),
+    scoreHigh(num("operations.outputPerShift"), 100),
+    scoreLow(num("operations.cycleDays"), 45, 7),
+    scoreBand(num("operations.equipmentUtilization"), 45, 70, 85),
+    scoreLow(num("operations.downtime"), 25, 3),
+    scoreHigh(num("operations.bottleneckControl"), 10),
+    scoreHigh(num("operations.wipControl"), 10),
+    scoreHigh(num("operations.automatedOps"), 90),
+    scoreHigh(num("operations.planningAccuracy"), 95),
+    scoreHigh(num("operations.digitalOperationCapture"), 95)
+  ]);
+  const qualityScore = avg([
+    scoreLow(num("quality.defectRate"), 12, 1),
+    scoreLow(num("quality.reworkRate"), 18, 2),
+    scoreLow(revenue ? num("quality.defectCost") / revenue * 100 : 8, 10, 1),
+    scoreLow(num("quality.claims"), 50, 3),
+    scoreHigh(num("quality.repeatDefects"), 10),
+    scoreLow(num("quality.resolutionTime"), 20, 2),
+    scoreHigh(num("quality.fullControl"), 100),
+    scoreHigh(num("quality.digitalPassport"), 100),
+    scoreHigh(num("quality.traceEmployeeMaterial"), 100)
+  ]);
+  const peopleScore = avg([
+    scoreLow(num("people.keyDependency"), 85, 15),
+    scoreLow(num("people.onboardingDays"), 90, 10),
+    scoreHigh(num("people.mentors"), 8),
+    scoreHigh(num("people.knowledgeBase"), 100),
+    scoreHigh(num("people.digitalInstructions"), 100),
+    scoreHigh(num("people.trainingMaterials"), 100),
+    scoreHigh(num("people.trainingImpact"), 10),
+    scoreLow(num("people.turnover"), 35, 5),
+    scoreHigh(num("people.teamProductivity"), 10),
+    scoreHigh(num("people.speedQualityBalance"), 10)
+  ]);
+  const digitalScore = avg([
+    scoreHigh(num("digital.orderHistory"), 5),
+    scoreHigh(num("digital.customerBase"), 100),
+    scoreHigh(num("digital.supplierBase"), 100),
+    scoreHigh(num("digital.productPassports"), 100),
+    scoreHigh(num("digital.operationHistory"), 100),
+    scoreHigh(num("digital.qualityStats"), 100),
+    scoreHigh(num("digital.knowledgeBase"), 100),
+    scoreHigh(num("digital.trainingVideos"), 100),
+    scoreHigh(num("digital.standards"), 100),
+    scoreHigh(num("digital.instructions"), 100),
+    scoreHigh(num("digital.performanceAnalytics"), 100),
+    scoreHigh(num("digital.defectData"), 100),
+    scoreHigh(num("digital.improvementHistory"), 100),
+    scoreHigh(num("digital.integrations"), 8),
+    scoreHigh(num("digital.dataCompleteness"), 100),
+    scoreHigh(num("digital.dataStructure"), 10),
+    scoreHigh(num("digital.dataReliability"), 10),
+    scoreHigh(num("digital.auditAvailability"), 100)
+  ]);
+  const scalabilityScore = avg([
+    scoreHigh(num("scalability.withoutOwner"), 10),
+    scoreHigh(num("scalability.secondShift"), 10),
+    scoreHigh(num("scalability.newSiteRepeatability"), 10),
+    scoreHigh(num("scalability.newProductLaunch"), 10),
+    scoreHigh(num("scalability.standardization"), 100),
+    scoreHigh(num("scalability.adminLeverage"), 10),
+    scoreHigh(num("scalability.backupSuppliers"), 100),
+    scoreHigh(num("scalability.keyPersonResilience"), 10)
+  ]);
+  const ownerRiskScore = avg([
+    scoreHigh(num("scalability.withoutOwner"), 10),
+    scoreLow(num("people.keyDependency"), 85, 15),
+    scoreHigh(num("people.knowledgeBase"), 100),
+    scoreHigh(num("operations.digitalOperationCapture"), 95)
+  ]);
+  const blocks = [
+    block("finance", "Финансы", financeScore, "Финансовое состояние, долговая нагрузка, маржа, денежный поток", "financial"),
+    block("operations", "Операционная зрелость", operationsScore, "Управляемость производства, план, простои, НЗП, цифровая фиксация", "operations"),
+    block("quality", "Качество", qualityScore, "Брак, переделки, рекламации, контроль и прослеживаемость", "quality"),
+    block("people", "Люди и знания", peopleScore, "Зависимость от людей, адаптация, наставники, база знаний", "people"),
+    block("digital", "Цифровой капитал", digitalScore, "Структура, полнота, история и доступность данных для аудита", "digital"),
+    block("scalability", "Масштабируемость", scalabilityScore, "Вторая смена, новая площадка, стандарты, резервные поставщики", "scalability"),
+    block("ownerRisk", "Зависимость от собственника", ownerRiskScore, "Работа без собственника и устойчивость к ключевым людям", "people")
+  ];
+  const weighted = blocks.reduce((sum, b) => sum + b.score * (METHODOLOGY.weights[b.id] || 0), 0);
+  const completion = completionPct();
+  const sourceQuality = dataQualityPct();
+  const completionFactor = completion / 100;
+  const score = Math.round(clamp(weighted * 10 * (.78 + completionFactor * .22), 0, 1000));
+  const gaps = blocks.filter(b => b.score < 72).sort((a,b) => a.score - b.score);
+  const potential = Math.round(clamp(score + gaps.slice(0,5).reduce((sum, b) => sum + (72 - b.score) * 1.55, 0), score, 1000));
+  const baseLow = Math.max(0, avg([ebitda * 3.2, revenue * .45, Math.max(assets - liabilities, 0) * .9]));
+  const baseHigh = Math.max(baseLow, avg([ebitda * 5.1, revenue * .72, Math.max(assets - liabilities, 0) * 1.25]));
+  const coefs = [
+    coef("Качество финансов", financeScore, "financialQuality", "Маржа, денежный поток, долговая нагрузка и стабильность данных"),
+    coef("Управляемость", operationsScore, "manageability", "Планирование, простои, производственный цикл и контроль НЗП"),
+    coef("Масштабируемость", scalabilityScore, "scalability", "Вторая смена, новая площадка, стандарты и резервные поставщики"),
+    coef("Цифровая зрелость", digitalScore, "digitalMaturity", "Данные, интеграции, цифровые паспорта и аудит"),
+    coef("Риски", avg([qualityScore, ownerRiskScore, 100 - clamp(num("financial.clientConcentration"),0,100)]), "risk", "Качество, концентрация клиентов и зависимость от собственника")
+  ];
+  const totalCoef = coefs.reduce((m, c) => m * c.value, 1);
+  const finalLow = baseLow * totalCoef;
+  const finalHigh = baseHigh * totalCoef;
+  return { score, potential, zone: zone(score), blocks, completion, sourceQuality, baseLow, baseHigh, finalLow, finalHigh, coefs, recommendations: recommendations(blocks), confidence: confidenceLabel(sourceQuality, completion) };
+}
+
+function block(id, name, score, explanation, sourceSection) {
+  return {
+    id, name, score: Math.round(score), zone: blockZone(score), explanation,
+    source: sourceSection, confidence: confidenceForSection(sourceSection),
+    strengths: score >= 72 ? ["Блок поддерживает инвестиционную готовность", "Показатели пригодны для переговоров"] : ["Есть измеримые данные для улучшения"],
+    weaknesses: score < 72 ? ["Блок снижает управляемость и оценочный диапазон", "Нужны подтвержденные данные и регламенты"] : ["Важно удерживать динамику и подтверждение данных"],
+    dynamics: "Динамика появится после сохранения повторных оценок"
+  };
+}
+function coef(title, score, key, explanation) {
+  const cfg = METHODOLOGY.coefficients[key];
+  const value = cfg.min + (cfg.max - cfg.min) * clamp(score, 0, 100) / 100;
+  return { title, value, low: cfg.min, high: cfg.max, explanation, quality: Math.round(score) };
+}
+function completionPct() {
+  const fields = SECTIONS.flatMap(s => s.fields);
+  const filled = fields.filter(field => {
+    const v = getPath(state.data, field.path);
+    return v !== undefined && v !== null && String(v).trim() !== "";
+  }).length;
+  return fields.length ? Math.round(filled / fields.length * 100) : 0;
+}
+function dataQualityPct() {
+  const values = ["accounting","bank","erp","crm","warehouse","quality","hr"].map(k => getPath(state.data, "sources." + k));
+  const score = values.reduce((sum, v) => sum + (v === "EXPERT_VERIFIED" ? 100 : v === "SYSTEM_VERIFIED" ? 72 : 35), 0);
+  return Math.round(score / values.length);
+}
+function confidenceForSection(section) {
+  const source = getPath(state.data, "sources." + sourceMap(section));
+  if (source === "EXPERT_VERIFIED") return "экспертно верифицированный";
+  if (source === "SYSTEM_VERIFIED") return "подтвержденный данными";
+  return "предварительный";
+}
+function sourceMap(section) {
+  return ({ financial: "accounting", operations: "erp", quality: "quality", people: "hr", digital: "erp", scalability: "erp" })[section] || "accounting";
+}
+function confidenceLabel(sourceQuality, completion) {
+  if (sourceQuality >= 82 && completion >= 85) return "экспертно верифицированный";
+  if (sourceQuality >= 62 && completion >= 70) return "подтвержденный данными";
+  return "предварительный";
+}
+function recommendations(blocks) {
+  const templates = {
+    finance: ["Собрать 36 месяцев P&L, cash-flow и баланса в единой модели", "Снизить концентрацию на топ-клиенте через план продаж по новым сегментам"],
+    operations: ["Внедрить цифровые сменные задания и ежедневный контроль выполнения плана", "Зафиксировать узкие места и простой оборудования в единой панели"],
+    quality: ["Запустить цифровой паспорт изделия и трассировку материала/оператора", "Ввести разбор повторяемых дефектов с владельцем действия"],
+    people: ["Оцифровать инструкции для критичных операций и программу адаптации", "Разделить знания ключевых сотрудников через наставников и базу знаний"],
+    digital: ["Интегрировать 1С/ERP, склад и контроль качества в единый контур данных", "Повысить полноту и структуру данных до уровня аудита"],
+    scalability: ["Стандартизировать запуск второй смены и контроль резервных поставщиков", "Подготовить пакет процессов для повторения на новой площадке"],
+    ownerRisk: ["Передать операционные решения руководителям направлений с KPI", "Проверить работу предприятия без собственника в течение 30 дней"]
+  };
+  return blocks
+    .filter(b => b.score < 78)
+    .sort((a,b) => a.score - b.score)
+    .flatMap((b, idx) => (templates[b.id] || []).map((title, j) => ({
+      title,
+      problem: b.name + ": " + b.explanation,
+      recommendation: title,
+      effect: b.score < 50 ? "Снимает критичное ограничение управляемости" : "Повышает доказательность и воспроизводимость бизнеса",
+      gain: Math.max(12, Math.round((82 - b.score) / 2) + j * 3),
+      valueImpact: b.score < 50 ? "+4-8%" : "+2-5%",
+      complexity: idx < 2 ? "средняя" : "низкая",
+      cost: idx < 2 ? "$3K-$12K" : "$1K-$5K",
+      term: idx < 2 ? "90 дней" : "30 дней",
+      priority: idx < 2 ? "HIGH" : "MEDIUM",
+      owner: b.id === "finance" ? "FINANCE" : b.id === "people" ? "HR" : "PRODUCTION",
+      status: "PLANNED",
+      horizon: idx < 2 ? "30 дней" : idx < 5 ? "90 дней" : "12 месяцев"
+    }))).slice(0, 12);
+}
+
+function render() {
+  applyLanguage();
+  renderCompanySelect();
+  renderTabs();
+  renderForm();
+  renderDashboard();
+  renderSources();
+  renderDocs();
+  renderHistory();
+}
+
+function applyLanguage() {
+  const dict = I18N[state.lang] || I18N.ru;
+  document.documentElement.lang = state.lang;
+  document.title = dict.title;
+  ["heroEyebrow","heroTitle","heroLead","heroFormBtn","heroRoadmapBtn","saveSnapshotBtn","copyCompanyBtn","printBtn","submitBtn","verifyBtn","profileTabsNote"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && dict[id]) el.textContent = dict[id];
+  });
+  document.querySelectorAll("[data-lang-choice]").forEach(button => {
+    button.classList.toggle("active", button.dataset.langChoice === state.lang);
+  });
+  document.querySelectorAll("#sideNav a").forEach((a, i) => {
+    const dot = a.querySelector(".dot");
+    a.textContent = dict.nav[i] || a.textContent;
+    if (dot) a.prepend(dot);
+  });
+  const dashboardTitle = document.querySelector("section.panel h2");
+  if (dashboardTitle) dashboardTitle.textContent = dict.dashboard;
+  const statusLine = document.getElementById("statusLine");
+  if (statusLine && !state.savedAt) statusLine.textContent = dict.dashboardNote;
+  const metricLabels = document.querySelectorAll("section.panel .grid-4 .metric label");
+  if (metricLabels[0]) metricLabels[0].textContent = dict.score;
+  if (metricLabels[1]) metricLabels[1].textContent = dict.potential;
+  if (metricLabels[2]) metricLabels[2].textContent = dict.valuation;
+  if (metricLabels[3]) metricLabels[3].textContent = dict.completion;
+}
+function renderTabs() {
+  const wrap = document.getElementById("formTabs");
+  wrap.innerHTML = "";
+  SECTIONS.forEach(section => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tab" + (section.id === activeSection ? " active" : "");
+    btn.textContent = section.title;
+    btn.onclick = () => { activeSection = section.id; renderTabs(); renderForm(); location.hash = section.anchor; };
+    wrap.appendChild(btn);
+  });
+}
+function renderForm() {
+  const form = document.getElementById("assessmentForm");
+  form.innerHTML = "";
+  SECTIONS.forEach(section => {
+    const pane = document.createElement("div");
+    pane.className = "section-pane" + (section.id === activeSection ? " active" : "");
+    const grid = document.createElement("div");
+    grid.className = "form-grid";
+    section.fields.forEach(field => grid.appendChild(renderField(field)));
+    pane.appendChild(grid);
+    form.appendChild(pane);
+  });
+}
+function renderField(field) {
+  const wrap = document.createElement("div");
+  wrap.className = "field" + (field.required ? " required" : "");
+  const label = document.createElement("label");
+  label.textContent = field.label;
+  const small = document.createElement("small");
+  small.textContent = "Источник: " + (field.source || confidenceForSection(field.path.split(".")[0])) + ". Влияет на точность оценки.";
+  let input;
+  if (field.type === "textarea") {
+    input = document.createElement("textarea");
+  } else if (field.type === "select") {
+    input = document.createElement("select");
+    (field.options || []).forEach(option => {
+      const opt = document.createElement("option");
+      opt.value = option;
+      opt.textContent = option;
+      input.appendChild(opt);
+    });
+  } else {
+    input = document.createElement("input");
+    input.type = field.type;
+    if (field.type === "number") input.step = "any";
+  }
+  input.value = getPath(state.data, field.path) || "";
+  input.placeholder = field.placeholder || "";
+  input.dataset.path = field.path;
+  input.oninput = input.onchange = (e) => {
+    setPath(state.data, field.path, e.target.value);
+    if (field.path === "company.name") syncCompanyName(e.target.value);
+    state.changes.unshift({ at: new Date().toISOString(), path: field.path, value: e.target.value });
+    state.changes = state.changes.slice(0, 80);
+    saveState("autosave");
+    renderDashboard();
+    renderSources();
+  };
+  wrap.append(label, input, small);
+  return wrap;
+}
+function renderDashboard() {
+  const r = calculate();
+  const currency = getPath(state.data, "company.currency");
+  document.getElementById("scoreValue").textContent = r.score + " / 1000";
+  document.getElementById("potentialValue").textContent = r.potential;
+  document.getElementById("scoreZone").textContent = r.zone.label;
+  document.getElementById("valuationValue").textContent = money(r.finalLow, currency) + " - " + money(r.finalHigh, currency);
+  document.getElementById("valuationSub").textContent = "Достоверность: " + r.confidence;
+  document.getElementById("publicBadgeScore").textContent = r.score + " / 1000";
+  document.getElementById("publicBadgeZone").textContent = r.zone.label;
+  document.getElementById("publicBadgeValuation").textContent = money(r.finalLow, currency) + " - " + money(r.finalHigh, currency);
+  document.getElementById("publicBadgeConfidence").textContent = "Достоверность: " + r.confidence + " · потенциальный индекс " + r.potential;
+  document.getElementById("publicBadgeBar").style.width = Math.max(0, Math.min(100, r.score / 10)) + "%";
+  document.getElementById("completionValue").textContent = r.completion + "%";
+  document.getElementById("accuracyValue").textContent = "Точность: " + (r.completion >= 85 ? "высокая" : r.completion >= 60 ? "средняя" : "низкая");
+  document.getElementById("confidencePill").textContent = r.confidence;
+  document.getElementById("questionnaireStatus").textContent = state.status;
+  document.getElementById("visibilityPill").textContent = state.visibility;
+  document.getElementById("baseRange").textContent = money(r.baseLow, currency) + " - " + money(r.baseHigh, currency);
+  document.getElementById("totalCoef").textContent = r.coefs.reduce((m,c) => m * c.value, 1).toFixed(2) + "x";
+  document.getElementById("dataQuality").textContent = r.sourceQuality + "%";
+  renderBreakdown(r);
+  renderInsights(r);
+  renderCoefs(r);
+  renderRecommendations(r);
+}
+function renderBreakdown(r) {
+  const wrap = document.getElementById("blockBreakdown");
+  wrap.innerHTML = "";
+  r.blocks.forEach(b => {
+    const row = document.createElement("div");
+    row.className = "score-row";
+    row.innerHTML = `<div><strong>${b.name}</strong><div class="tiny">${b.confidence}</div></div><div class="bar ${b.zone}"><i style="width:${b.score}%"></i></div><div style="text-align:right;font-weight:850">${b.score}/100</div>`;
+    wrap.appendChild(row);
+  });
+}
+function renderInsights(r) {
+  const strengths = [...r.blocks].sort((a,b) => b.score - a.score).slice(0,3);
+  const constraints = [...r.blocks].sort((a,b) => a.score - b.score).slice(0,3);
+  document.getElementById("strengthList").innerHTML = strengths.map(b => `<div class="item"><strong>${b.name}</strong><div class="tiny">${b.strengths[0]}</div></div>`).join("");
+  document.getElementById("constraintList").innerHTML = constraints.map(b => `<div class="item"><strong>${b.name}</strong><div class="tiny">${b.weaknesses[0]}</div></div>`).join("");
+  ["production","quality","people","digital"].forEach(id => {
+    const b = r.blocks.find(x => x.id === (id === "production" ? "operations" : id));
+    const scoreEl = document.getElementById(id + "Score");
+    const listEl = document.getElementById(id + "Insights");
+    if (!b || !scoreEl || !listEl) return;
+    scoreEl.textContent = b.score + " / 100";
+    listEl.innerHTML = [
+      `<div class="item"><div class="item-head"><strong>Объяснение</strong><span class="pill ${b.zone}">${b.zone}</span></div><div class="muted">${b.explanation}</div></div>`,
+      `<div class="item"><strong>Сильные стороны</strong><div class="tiny">${b.strengths.join("; ")}</div></div>`,
+      `<div class="item"><strong>Слабые стороны</strong><div class="tiny">${b.weaknesses.join("; ")}</div></div>`,
+      `<div class="item"><strong>Источник и динамика</strong><div class="tiny">Источник: ${b.source}; достоверность: ${b.confidence}; ${b.dynamics}.</div></div>`
+    ].join("");
+  });
+}
+function renderCoefs(r) {
+  document.getElementById("coefList").innerHTML = r.coefs.map(c => `
+    <div class="item">
+      <div class="item-head"><strong>${c.title}</strong><span class="pill cyan">${c.value.toFixed(2)}x</span></div>
+      <div class="tiny">Диапазон влияния: ${c.low.toFixed(2)}x - ${c.high.toFixed(2)}x. Качество данных: ${c.quality}/100. ${c.explanation}.</div>
+    </div>
+  `).join("");
+}
+function renderRecommendations(r) {
+  const list = document.getElementById("recommendationList");
+  const roadmap = document.getElementById("roadmapGrid");
+  document.getElementById("recommendationCount").textContent = r.recommendations.length + " действий";
+  list.innerHTML = r.recommendations.map(actionCard).join("");
+  const horizons = ["30 дней", "90 дней", "12 месяцев"];
+  roadmap.innerHTML = horizons.map(h => `<div class="roadmap-col"><div class="roadmap-title">${h}</div>${r.recommendations.filter(x => x.horizon === h).map(actionCard).join("") || '<div class="item tiny">Нет критичных действий на этот горизонт.</div>'}</div>`).join("");
+}
+function actionCard(a) {
+  return `<div class="item">
+    <div class="item-head"><strong>${a.title}</strong><span class="pill ${a.priority === "HIGH" ? "red" : "yellow"}">${a.priority}</span></div>
+    <div class="tiny"><b>Проблема:</b> ${a.problem}</div>
+    <div class="tiny"><b>Ожидаемый эффект:</b> ${a.effect}; прирост индекса +${a.gain}; влияние на стоимость ${a.valueImpact}.</div>
+    <div class="tiny"><b>Сложность:</b> ${a.complexity}; <b>стоимость:</b> ${a.cost}; <b>срок:</b> ${a.term}; <b>ответственный:</b> ${a.owner}; <b>статус:</b> ${a.status}.</div>
+  </div>`;
+}
+function renderSources() {
+  const sources = ["accounting","bank","erp","crm","warehouse","quality","hr"].map(k => ({ key: k, value: getPath(state.data, "sources." + k) || "SELF_REPORTED" }));
+  document.getElementById("sourceGrid").innerHTML = sources.map(s => `<div class="item"><div class="item-head"><strong>${s.key.toUpperCase()}</strong><span class="pill ${s.value === "EXPERT_VERIFIED" ? "green" : s.value === "SYSTEM_VERIFIED" ? "cyan" : "yellow"}">${s.value}</span></div><div class="tiny">Период: ${getPath(state.data,"sources.period") || "не задан"}; синхронизация: ${getPath(state.data,"sources.syncDate") || "нет даты"}; качество: ${getPath(state.data,"sources.syncQuality") || 0}%.</div></div>`).join("");
+}
+function renderDocs() {
+  document.getElementById("docList").innerHTML = (state.documents || []).map((d, i) => `<div class="file-row"><div><strong>${d.name}</strong><div class="tiny">${d.type || "file"} · ${Math.round(d.size/1024)} KB · ${d.added}</div></div><button class="btn danger no-print" type="button" onclick="removeDoc(${i})">Удалить</button></div>`).join("") || '<div class="tiny" style="margin-top:10px;">Документы еще не добавлены.</div>';
+}
+function renderHistory() {
+  document.getElementById("historyList").innerHTML = (state.history || []).map((h, i) => `<div class="item"><div class="item-head"><strong>${h.company}</strong><span class="pill cyan">${h.score}/1000</span></div><div class="tiny">${new Date(h.at).toLocaleString("ru-RU")} · ${h.range} · ${h.confidence} · потенциальный индекс ${h.potential}</div><button class="btn no-print" style="margin-top:8px;" onclick="restoreSnapshot(${i})">Копировать в текущую оценку</button></div>`).join("") || '<div class="tiny">Сохраненных оценок пока нет.</div>';
+}
+function renderCompanySelect() {
+  const select = document.getElementById("companySelect");
+  select.innerHTML = (state.companies || []).map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+  select.value = state.currentCompany;
+}
+function syncCompanyName(name) {
+  const c = state.companies.find(x => x.id === state.currentCompany);
+  if (c) c.name = name || "Без названия";
+}
+function saveSnapshot() {
+  const r = calculate();
+  const snapshot = {
+    at: new Date().toISOString(),
+    company: getPath(state.data, "company.name") || "Компания",
+    score: r.score,
+    potential: r.potential,
+    range: money(r.finalLow) + " - " + money(r.finalHigh),
+    confidence: r.confidence,
+    data: JSON.parse(JSON.stringify(state.data))
+  };
+  state.history.unshift(snapshot);
+  state.history = state.history.slice(0, 20);
+  state.status = state.status === "DRAFT" ? "IN_PROGRESS" : state.status;
+  saveState("snapshot");
+  render();
+}
+function restoreSnapshot(i) {
+  const snap = state.history[i];
+  if (!snap) return;
+  state.data = JSON.parse(JSON.stringify(snap.data));
+  state.status = "IN_PROGRESS";
+  saveState("copied previous assessment");
+  render();
+}
+function removeDoc(i) {
+  state.documents.splice(i, 1);
+  saveState("document removed");
+  renderDocs();
+}
+
+document.getElementById("saveSnapshotBtn").onclick = saveSnapshot;
+document.getElementById("copyCompanyBtn").onclick = () => {
+  const id = "company-" + Date.now();
+  const name = (getPath(state.data, "company.name") || "Компания") + " copy";
+  state.currentCompany = id;
+  state.companies.push({ id, name });
+  setPath(state.data, "company.name", name);
+  state.status = "DRAFT";
+  saveState("company copied");
+  render();
+};
+document.getElementById("printBtn").onclick = () => window.print();
+document.getElementById("submitBtn").onclick = () => { state.status = "SUBMITTED"; saveState("submitted"); renderDashboard(); };
+document.getElementById("verifyBtn").onclick = () => { state.status = "VERIFIED"; ["accounting","bank","erp","crm","warehouse","quality","hr"].forEach(k => setPath(state.data, "sources."+k, "EXPERT_VERIFIED")); saveState("verified"); render(); };
+document.getElementById("clearHistoryBtn").onclick = () => { state.history = []; saveState("history cleared"); renderHistory(); };
+document.getElementById("visibilityMode").onchange = e => { state.visibility = e.target.value; saveState("visibility"); renderDashboard(); };
+document.getElementById("userRole").onchange = e => { setPath(state.data, "company.role", e.target.value); saveState("role"); };
+document.getElementById("docInput").onchange = e => {
+  state.documents.push(...Array.from(e.target.files).map(file => ({ name: file.name, size: file.size, type: file.type, added: new Date().toLocaleString("ru-RU") })));
+  e.target.value = "";
+  saveState("documents");
+  renderDocs();
+};
+document.getElementById("companySelect").onchange = e => { state.currentCompany = e.target.value; saveState("company switched"); };
+document.querySelectorAll("[data-lang-choice]").forEach(button => {
+  button.onclick = () => {
+    state.lang = button.dataset.langChoice || "ru";
+    saveState("language");
+    applyLanguage();
+  };
+});
+document.getElementById("visibilityMode").value = state.visibility;
+document.getElementById("userRole").value = getPath(state.data, "company.role") || "OWNER";
+document.getElementById("methodologyBadge").textContent = "Methodology " + METHODOLOGY.version;
+
+const observer = new IntersectionObserver(entries => {
+  const visible = entries.filter(e => e.isIntersecting).sort((a,b) => b.intersectionRatio - a.intersectionRatio)[0];
+  if (!visible) return;
+  document.querySelectorAll("#sideNav a").forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#" + visible.target.id));
+}, { rootMargin: "-35% 0px -55% 0px", threshold: [0, .2, .6] });
+document.querySelectorAll("main > section[id]").forEach(s => observer.observe(s));
+
+function initNeuralBackground() {
+  const canvas = document.getElementById("neural-bg");
+  const ctx = canvas && canvas.getContext("2d");
+  if (!canvas || !ctx) return;
+  let dots = [];
+  let width = 0;
+  let height = 0;
+  let dpr = 1;
+  const count = 64;
+  const radius = 128;
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+    dots = Array.from({ length: count }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - .5) * .34 * dpr,
+      vy: (Math.random() - .5) * .34 * dpr,
+      r: (Math.random() * 1.4 + .8) * dpr
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const scrollRatio = Math.min(window.scrollY / Math.max(document.body.scrollHeight - window.innerHeight, 1), 1);
+    const cyanOpacity = .60 - scrollRatio * .18;
+    const lineBase = .28 - scrollRatio * .08;
+
+    dots.forEach(dot => {
+      dot.x += dot.vx;
+      dot.y += dot.vy;
+      if (dot.x < 0 || dot.x > canvas.width) dot.vx *= -1;
+      if (dot.y < 0 || dot.y > canvas.height) dot.vy *= -1;
+      ctx.beginPath();
+      ctx.arc(dot.x, dot.y, dot.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0,212,255,${cyanOpacity})`;
+      ctx.fill();
+    });
+
+    for (let i = 0; i < dots.length; i++) {
+      for (let j = i + 1; j < dots.length; j++) {
+        const dx = dots[i].x - dots[j].x;
+        const dy = dots[i].y - dots[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < radius * dpr) {
+          ctx.beginPath();
+          ctx.moveTo(dots[i].x, dots[i].y);
+          ctx.lineTo(dots[j].x, dots[j].y);
+          ctx.strokeStyle = `rgba(0,255,255,${(1 - dist / (radius * dpr)) * lineBase})`;
+          ctx.lineWidth = .7 * dpr;
+          ctx.stroke();
+        }
+      }
+    }
+    window.requestAnimationFrame(draw);
+  }
+
+  function updateScrollShade() {
+    const max = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+    const ratio = Math.min(window.scrollY / max, 1);
+    const root = document.documentElement.style;
+    root.setProperty("--scroll-dark", (ratio * .56).toFixed(3));
+    root.setProperty("--scroll-mid", (.10 + ratio * .30).toFixed(3));
+    root.setProperty("--scroll-bottom", (.34 + ratio * .34).toFixed(3));
+    root.setProperty("--scroll-cyan", (.15 - ratio * .09).toFixed(3));
+    root.setProperty("--scroll-magenta", (.12 - ratio * .07).toFixed(3));
+    root.setProperty("--neural-opacity", (.82 - ratio * .24).toFixed(3));
+    root.setProperty("--neural-brightness", (1.18 - ratio * .38).toFixed(3));
+    root.setProperty("--neural-saturation", (1.18 - ratio * .22).toFixed(3));
+  }
+
+  window.addEventListener("resize", resize);
+  window.addEventListener("scroll", updateScrollShade, { passive: true });
+  resize();
+  updateScrollShade();
+  draw();
+}
+
+saveState("loaded");
+render();
+initNeuralBackground();
+</script>
+</body>
+</html>
