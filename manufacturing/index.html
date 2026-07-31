@@ -1,0 +1,1791 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Цифровизация производства - BizDNAi</title>
+  <meta name="description" content="Цифровая платформа для полного контроля производства: сотрудники, оборудование, склад, заказы, аналитика и кабинет директора в одном окне.">
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-2: #1d222c;
+      --line: #2b3341;
+      --text: #e8edf5;
+      --muted: #9aa6b6;
+      --faint: #687386;
+      --cyan: #00d4ff;
+      --magenta: #d81bff;
+      --green: #35d07f;
+      --yellow: #f6c350;
+      --red: #ff6470;
+      --blue: #6ba5ff;
+      --shadow: 0 18px 50px rgba(0,0,0,.28);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0b0d11;
+      color: var(--text);
+      letter-spacing: 0;
+    }
+    a { color: inherit; }
+    canvas#neural-bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(0,212,255,.15), transparent 30%),
+        radial-gradient(circle at 82% 0%, rgba(216,27,255,.12), transparent 28%),
+        linear-gradient(180deg, #121620 0%, #0f1115 40%, #07080b 100%);
+      opacity: var(--neural-opacity, .82);
+      filter: brightness(var(--neural-brightness, 1.18)) saturate(var(--neural-saturation, 1.18));
+      pointer-events: none;
+    }
+    .scroll-shade {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(0,212,255,var(--scroll-cyan, .12)), transparent 32%),
+        radial-gradient(circle at 82% 4%, rgba(216,27,255,var(--scroll-magenta, .10)), transparent 30%),
+        linear-gradient(180deg, rgba(15,17,21,0) 0%, rgba(8,9,12,var(--scroll-mid, .12)) 54%, rgba(0,0,0,var(--scroll-bottom, .34)) 100%),
+        rgba(0,0,0,var(--scroll-dark, 0));
+      transition: background .12s linear;
+    }
+    .app { position: relative; z-index: 2; min-height: 100vh; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid rgba(0,212,255,.16);
+      background: rgba(10,13,18,.82);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.20);
+    }
+    .topbar-inner {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 9px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 230px;
+      text-decoration: none;
+    }
+    .brand img { height: 32px; width: auto; }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #101820;
+      border: 1px solid rgba(0,212,255,.35);
+      color: var(--cyan);
+      font-weight: 900;
+      box-shadow: 0 0 18px rgba(0,212,255,.26), 0 0 28px rgba(216,27,255,.10);
+    }
+    .brand-text strong { display: block; font-size: 15px; line-height: 1.1; }
+    .brand-text span { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .btn {
+      min-height: 38px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(18,23,32,.78);
+      color: var(--text);
+      padding: 9px 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+      transition: .16s ease;
+      white-space: nowrap;
+    }
+    .btn:hover { border-color: rgba(0,212,255,.55); color: white; box-shadow: 0 0 16px rgba(0,212,255,.10); }
+    .btn.primary { background: var(--cyan); border-color: var(--cyan); color: #061018; box-shadow: 0 0 22px rgba(0,212,255,.24); }
+    .btn.primary:hover { background: #62e5ff; }
+    .tg-cta-btn {
+      color: var(--cyan);
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 38px;
+      padding: 6px 4px;
+      transition: .16s ease;
+      white-space: nowrap;
+    }
+    .tg-cta-btn:hover { color: #62e5ff; text-shadow: 0 0 14px rgba(0,212,255,.55); }
+    .lang-bar { display: flex; align-items: center; gap: 4px; }
+    .lang-toggle {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid #262b36;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      line-height: 1;
+      transition: .16s ease;
+    }
+    .lang-toggle:hover { border-color: var(--cyan); color: var(--cyan); }
+    .lang-toggle.active { border-color: var(--cyan); background: var(--cyan); color: #071018; }
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 24px 22px 70px;
+      display: grid;
+      gap: 18px;
+    }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px;
+      min-height: 560px;
+      display: grid;
+      align-items: start;
+      background:
+        linear-gradient(115deg, rgba(6,9,13,.94), rgba(8,12,17,.70) 45%, rgba(8,12,17,.18)),
+        url("https://images.unsplash.com/photo-1581093458791-9d09c85b2426?auto=format&fit=crop&w=2200&q=82") center/cover;
+      box-shadow: var(--shadow), 0 0 42px rgba(0,212,255,.12), inset 0 0 80px rgba(0,212,255,.06);
+    }
+    .hero:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(0,212,255,.12), transparent 26%, rgba(216,27,255,.08) 78%, transparent),
+        radial-gradient(circle at 18% 28%, rgba(0,212,255,.18), transparent 22%);
+      pointer-events: none;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      padding: 58px 42px 42px;
+      max-width: 900px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--cyan);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    h1 {
+      margin: 0;
+      max-width: 900px;
+      font-size: 72px;
+      line-height: .96;
+      letter-spacing: 0;
+      text-shadow: 0 0 32px rgba(0,212,255,.18), 0 0 42px rgba(216,27,255,.10);
+    }
+    h2 { margin: 0; font-size: 42px; line-height: 1.08; letter-spacing: 0; }
+    h3 { margin: 0; font-size: 17px; letter-spacing: 0; }
+    .lead {
+      margin: 18px 0 0;
+      max-width: 820px;
+      color: #d4dbe7;
+      font-size: 19px;
+      line-height: 1.55;
+    }
+    .hero-actions { margin-top: 24px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .panel, .card {
+      border: 1px solid var(--line);
+      background: rgba(18,22,30,.78);
+      border-radius: 8px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 12px 35px rgba(0,0,0,.20), 0 0 24px rgba(0,212,255,.045);
+    }
+    .panel { padding: 26px; }
+    .section-title {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .muted { color: var(--muted); }
+    .tiny { color: var(--faint); font-size: 12px; line-height: 1.45; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
+    .cards-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+    .card {
+      padding: 16px;
+      min-height: 112px;
+      background: rgba(13,18,26,.82);
+      border-color: #253041;
+    }
+    .icon-card { display: grid; grid-template-columns: 54px minmax(0,1fr); gap: 13px; align-items: start; }
+    .visual-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      background: rgba(0,212,255,.10);
+      border: 1px solid rgba(0,212,255,.32);
+      box-shadow: 0 0 22px rgba(0,212,255,.10), inset 0 0 18px rgba(0,212,255,.05);
+    }
+    .visual-icon.magenta { background: rgba(216,27,255,.10); border-color: rgba(216,27,255,.30); }
+    .visual-icon.yellow { background: rgba(246,195,80,.10); border-color: rgba(246,195,80,.32); }
+    .visual-icon.red { background: rgba(255,100,112,.10); border-color: rgba(255,100,112,.32); }
+    .visual-icon.green { background: rgba(53,208,127,.10); border-color: rgba(53,208,127,.32); }
+    .card strong { display: block; color: #fff; font-size: 17px; line-height: 1.25; margin-bottom: 7px; }
+    .card p { margin: 0; color: var(--muted); line-height: 1.45; font-size: 14px; }
+    .accent-line {
+      margin-top: 18px;
+      padding: 18px 20px;
+      border-left: 3px solid var(--cyan);
+      background: rgba(0,212,255,.06);
+      border-radius: 8px;
+      color: #eaf6ff;
+      font-size: 30px;
+      line-height: 1.15;
+      font-weight: 900;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border-radius: 99px;
+      background: rgba(13,18,26,.82);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .pill.cyan { color: var(--cyan); border-color: rgba(0,212,255,.35); }
+    .pill.green { color: var(--green); border-color: rgba(53,208,127,.35); }
+    .pill.yellow { color: var(--yellow); border-color: rgba(246,195,80,.35); }
+    .pill.red { color: var(--red); border-color: rgba(255,100,112,.35); }
+    .system-map {
+      position: relative;
+      min-height: 520px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 46%, rgba(0,212,255,.18), transparent 25%),
+        radial-gradient(circle at 52% 48%, rgba(216,27,255,.13), transparent 34%),
+        rgba(13,18,26,.82);
+    }
+    .system-center {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%,-50%);
+      width: 260px;
+      min-height: 116px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      border: 1px solid rgba(0,212,255,.55);
+      background: rgba(0,212,255,.12);
+      border-radius: 10px;
+      box-shadow: 0 0 38px rgba(0,212,255,.22), inset 0 0 38px rgba(0,212,255,.08);
+      font-weight: 900;
+      color: #fff;
+      z-index: 2;
+    }
+    .node {
+      position: absolute;
+      width: 154px;
+      min-height: 50px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      border: 1px solid #2a3546;
+      background: rgba(18,23,32,.86);
+      border-radius: 8px;
+      color: #dce8f5;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 0 20px rgba(0,212,255,.08);
+    }
+    .node span { display:block; font-size:26px; line-height:1; margin-bottom:5px; }
+    .system-illustration {
+      min-height: 540px;
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 44%, rgba(0,212,255,.19), transparent 30%),
+        radial-gradient(circle at 50% 55%, rgba(216,27,255,.14), transparent 38%),
+        rgba(9,13,19,.88);
+    }
+    .platform-window {
+      width: min(620px, 88%);
+      min-height: 290px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,212,255,.38);
+      background: rgba(13,18,26,.92);
+      box-shadow: 0 0 50px rgba(0,212,255,.16), inset 0 0 60px rgba(0,212,255,.04);
+      padding: 16px;
+      z-index: 2;
+      display: grid;
+      gap: 12px;
+    }
+    .platform-top { display:flex; justify-content:space-between; gap:12px; align-items:center; border-bottom:1px solid #263243; padding-bottom:12px; }
+    .platform-kpis { display:grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap:10px; }
+    .platform-kpi { padding:12px; border-radius:8px; background:rgba(0,212,255,.08); border:1px solid rgba(0,212,255,.22); }
+    .platform-kpi b { display:block; font-size:24px; color:#fff; line-height:1; }
+    .platform-kpi span { display:block; margin-top:6px; font-size:12px; color:var(--muted); }
+    .platform-lines { display:grid; gap:9px; }
+    .platform-line { display:grid; grid-template-columns:120px minmax(0,1fr) 64px; gap:10px; align-items:center; color:var(--muted); font-size:13px; }
+    .system-orbit {
+      position:absolute;
+      width:96px;
+      height:96px;
+      border-radius:18px;
+      display:grid;
+      place-items:center;
+      text-align:center;
+      gap:4px;
+      padding:10px;
+      border:1px solid rgba(0,212,255,.30);
+      background:rgba(18,23,32,.86);
+      box-shadow:0 0 28px rgba(0,212,255,.10);
+      color:#fff;
+      font-size:11px;
+      font-weight:900;
+    }
+    .system-orbit i { font-style:normal; font-size:34px; line-height:1; }
+    .system-orbit:before {
+      content:"";
+      position:absolute;
+      width:190px;
+      height:1px;
+      background:linear-gradient(90deg,transparent,rgba(0,212,255,.38),transparent);
+      z-index:-1;
+      transform:rotate(var(--a,0deg));
+    }
+    .o1 { left:8%; top:10%; --a:25deg; }
+    .o2 { left:36%; top:5%; --a:90deg; }
+    .o3 { right:8%; top:10%; --a:155deg; }
+    .o4 { left:5%; top:42%; --a:0deg; }
+    .o5 { right:5%; top:42%; --a:180deg; }
+    .o6 { left:13%; bottom:9%; --a:-30deg; }
+    .o7 { left:43%; bottom:5%; --a:90deg; }
+    .o8 { right:13%; bottom:9%; --a:30deg; }
+    .solution-picture {
+      padding: 10px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 38%, rgba(0,212,255,.18), transparent 32%),
+        radial-gradient(circle at 58% 62%, rgba(216,27,255,.12), transparent 38%),
+        rgba(9,13,19,.88);
+    }
+    .solution-image {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid rgba(0,212,255,.22);
+      box-shadow: 0 0 34px rgba(0,212,255,.12);
+    }
+    .planning-picture {
+      margin-top: 12px;
+    }
+    .node:before {
+      content: "";
+      position: absolute;
+      inset: -90px;
+      background: linear-gradient(var(--line-angle, 0deg), transparent 48%, rgba(0,212,255,.23), transparent 52%);
+      z-index: -1;
+      pointer-events: none;
+    }
+    .n1 { left: 8%; top: 14%; --line-angle: 20deg; }
+    .n2 { left: 39%; top: 8%; --line-angle: 90deg; }
+    .n3 { right: 8%; top: 14%; --line-angle: 155deg; }
+    .n4 { left: 8%; top: 45%; --line-angle: -5deg; }
+    .n5 { right: 8%; top: 45%; --line-angle: 178deg; }
+    .n6 { left: 12%; bottom: 12%; --line-angle: -32deg; }
+    .n7 { left: 39%; bottom: 7%; --line-angle: 90deg; }
+    .n8 { right: 12%; bottom: 12%; --line-angle: 35deg; }
+    .n9 { left: 50%; top: 26%; transform: translateX(-50%); --line-angle: 90deg; }
+    .ops-dashboard, .director-dashboard {
+      display: grid;
+      gap: 14px;
+      background:
+        radial-gradient(circle at 16% 0%, rgba(0,212,255,.14), transparent 32%),
+        radial-gradient(circle at 90% 8%, rgba(216,27,255,.11), transparent 34%),
+        rgba(9,13,19,.86);
+      border: 1px solid rgba(0,212,255,.18);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: inset 0 0 70px rgba(0,212,255,.035);
+    }
+    .machine-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .machine-card {
+      padding: 16px;
+      border-radius: 8px;
+      background: rgba(18,23,32,.92);
+      border: 1px solid #283445;
+      min-height: 122px;
+      display: grid;
+      gap: 10px;
+    }
+    .machine-card .name { font-weight: 900; color: #fff; }
+    .status { display: inline-flex; align-items: center; gap: 7px; font-weight: 850; font-size: 13px; }
+    .status.green { color: var(--green); }
+    .status.yellow { color: var(--yellow); }
+    .status.red { color: var(--red); }
+    .gauge-row { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+    .gauge {
+      min-height: 94px;
+      padding: 13px;
+      border-radius: 8px;
+      background: rgba(13,18,26,.88);
+      border: 1px solid #253041;
+    }
+    .gauge b { display: block; color: #fff; font-size: 23px; line-height: 1; }
+    .gauge span { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; }
+    .line-bar { height: 8px; border-radius: 99px; background: #0b0f15; border: 1px solid #243044; overflow: hidden; margin-top: 12px; }
+    .line-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg,var(--cyan),var(--magenta)); }
+    .icon-cloud { display: flex; flex-wrap: wrap; gap: 9px; }
+    .icon-chip {
+      min-height: 39px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid #283445;
+      background: rgba(13,18,26,.82);
+      color: #dce8f5;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .iot-chip {
+      width: 86px;
+      min-height: 92px;
+      display: grid;
+      justify-items: center;
+      align-content: center;
+      gap: 8px;
+      text-align: center;
+      padding: 10px 8px;
+      border-radius: 10px;
+      background: rgba(13,18,26,.82);
+      border: 1px solid #283445;
+      color: #dce8f5;
+      font-size: 11.5px;
+      font-weight: 800;
+    }
+    .iot-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 30px;
+      background: rgba(0,212,255,.10);
+      border: 1px solid rgba(0,212,255,.30);
+      box-shadow: inset 0 0 18px rgba(0,212,255,.05);
+    }
+    .factory-analytics { display:grid; grid-template-columns: .9fr 1.1fr; gap:14px; }
+    .zone-board, .people-board, .director-board {
+      display:grid;
+      gap:12px;
+      padding:16px;
+      border-radius:10px;
+      background:rgba(9,13,19,.88);
+      border:1px solid #253041;
+    }
+    .area-card {
+      display:grid;
+      grid-template-columns: 54px minmax(0,1fr) auto;
+      gap:12px;
+      align-items:center;
+      padding:13px;
+      border-radius:8px;
+      border:1px solid #263243;
+      background:rgba(18,23,32,.86);
+    }
+    .area-card .pct, .smart-kpi .pct {
+      min-width:70px;
+      text-align:center;
+      border-radius:8px;
+      padding:8px 9px;
+      font-weight:900;
+      color:#061018;
+      background:var(--green);
+    }
+    .area-card.yellow .pct, .smart-kpi.yellow .pct { background:var(--yellow); }
+    .area-card.red .pct, .smart-kpi.red .pct { background:var(--red); color:#fff; }
+    .mini-people { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px; }
+    .person-card {
+      min-height:104px;
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #263243;
+      background:rgba(18,23,32,.86);
+      display:grid;
+      grid-template-columns:42px minmax(0,1fr);
+      gap:9px;
+      align-items:start;
+    }
+    .avatar {
+      width:42px;
+      height:42px;
+      border-radius:10px;
+      display:grid;
+      place-items:center;
+      color:#061018;
+      background:linear-gradient(135deg,var(--cyan),#8ff0ff);
+      background-size:cover;
+      background-position:center;
+      font-weight:900;
+    }
+    .avatar.photo { color:transparent; border:1px solid rgba(0,212,255,.26); }
+    .person-card strong { font-size:13px; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .person-card small { color:var(--muted); font-size:11px; }
+    .eff { grid-column:1/-1; display:grid; gap:5px; }
+    .eff span { color:var(--muted); font-size:11px; }
+    .eff .line-bar { margin:0; }
+    .eff.green .line-bar i { background:var(--green); }
+    .eff.yellow .line-bar i { background:var(--yellow); }
+    .eff.red .line-bar i { background:var(--red); }
+    .smart-kpi {
+      display:grid;
+      grid-template-columns: 46px minmax(0,1fr) auto;
+      gap:10px;
+      align-items:center;
+      padding:12px;
+      border-radius:8px;
+      border:1px solid #263243;
+      background:rgba(18,23,32,.86);
+    }
+    .integration-logo {
+      width: 112px;
+      min-height: 102px;
+      border-radius: 10px;
+      display:grid;
+      place-items:center;
+      text-align:center;
+      padding:10px;
+      color:#fff;
+      font-weight:900;
+      border:1px solid rgba(0,212,255,.24);
+      background:linear-gradient(135deg,rgba(0,212,255,.12),rgba(216,27,255,.10));
+      box-shadow:0 0 18px rgba(0,212,255,.06);
+      gap:8px;
+    }
+    .logo-mark { width:58px; height:58px; border-radius:14px; display:grid; place-items:center; font-size:24px; font-weight:900; color:#061018; background:#00d4ff; }
+    .logo-mark.onec { background:linear-gradient(135deg,#ffdc2e,#ef3f24); color:#101010; }
+    .logo-mark.tg { background:#27a7e7; color:#fff; }
+    .logo-mark.wa { background:#25d366; color:#052514; }
+    .logo-mark.excel { background:#1d6f42; color:#fff; }
+    .logo-mark.sql { background:#6ba5ff; color:#061018; }
+    .logo-mark.api { background:linear-gradient(135deg,var(--cyan),var(--magenta)); color:#fff; }
+    .integration-logo span:last-child { font-size:12px; color:#dce8f5; }
+    .alert-card { border-color: rgba(246,195,80,.38); background: rgba(246,195,80,.06); }
+    .order-flow { display: grid; gap: 10px; }
+    .flow-row { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: 12px; align-items: stretch; }
+    .flow-label {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(0,212,255,.28);
+      background: rgba(0,212,255,.08);
+      color: #fff;
+      font-weight: 900;
+    }
+    .flow-detail {
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid #253041;
+      background: rgba(13,18,26,.82);
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .benefit { display: flex; align-items: center; gap: 10px; min-height: 76px; }
+    .benefit b { color: var(--cyan); font-size: 34px; line-height:1; }
+    .steps { counter-reset: step; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+    .step { position: relative; min-height: 118px; }
+    .step:before { display:none; }
+    .step-head { display:flex; align-items:center; gap:9px; margin-bottom:12px; }
+    .step-num { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; color:#061018; background:var(--cyan); font-weight:900; flex:0 0 auto; }
+    .gear-visual {
+      min-height: 270px;
+      display:grid;
+      place-items:center;
+      position:relative;
+    }
+    .gear {
+      position:absolute;
+      display:grid;
+      place-items:center;
+      border-radius:50%;
+      border:1px solid rgba(0,212,255,.32);
+      background:rgba(0,212,255,.08);
+      color:var(--cyan);
+      font-size:72px;
+      box-shadow:0 0 30px rgba(0,212,255,.14);
+    }
+    .gear.one { width:150px; height:150px; left:12%; top:24%; animation:spin 18s linear infinite; }
+    .gear.two { width:120px; height:120px; right:18%; top:16%; color:var(--magenta); animation:spin 14s linear infinite reverse; }
+    .gear.three { width:104px; height:104px; right:34%; bottom:12%; color:var(--green); animation:spin 12s linear infinite; }
+    .gear-center {
+      width:230px;
+      min-height:88px;
+      display:grid;
+      place-items:center;
+      text-align:center;
+      border-radius:10px;
+      border:1px solid rgba(0,212,255,.44);
+      background:rgba(9,13,19,.80);
+      color:#fff;
+      font-weight:900;
+      z-index:2;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .modal {
+      position:fixed;
+      inset:0;
+      z-index:80;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      background:rgba(0,0,0,.62);
+      backdrop-filter:blur(8px);
+    }
+    .modal.open { display:flex; }
+    .modal-card {
+      width:min(560px,100%);
+      border:1px solid rgba(0,212,255,.28);
+      border-radius:10px;
+      background:rgba(16,21,30,.96);
+      box-shadow:0 24px 70px rgba(0,0,0,.45),0 0 36px rgba(0,212,255,.12);
+      padding:20px;
+    }
+    .modal-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:14px; }
+    .modal-close { width:34px; height:34px; border-radius:8px; border:1px solid var(--line); background:rgba(13,18,26,.82); color:var(--text); font-size:20px; }
+    .form-grid { display:grid; gap:10px; }
+    .form-grid input,.form-grid textarea {
+      width:100%;
+      border:1px solid #354052;
+      background:rgba(8,12,18,.86);
+      color:var(--text);
+      border-radius:7px;
+      padding:10px 11px;
+      outline:none;
+    }
+    .form-grid textarea { min-height:96px; resize:vertical; }
+    .captcha-slider { display:grid; gap:8px; padding:12px; border:1px solid #263243; border-radius:8px; background:rgba(13,18,26,.82); }
+    .captcha-row { display:grid; grid-template-columns:minmax(0,1fr) 84px; gap:10px; align-items:center; }
+    .captcha-row input[type=range] { accent-color: var(--cyan); }
+    .captcha-ok { color:var(--green); font-size:12px; font-weight:800; min-height:16px; }
+    .final {
+      min-height: 420px;
+      display: grid;
+      align-items: center;
+      background:
+        linear-gradient(120deg, rgba(6,9,13,.95), rgba(8,12,17,.72), rgba(8,12,17,.28)),
+      url("https://images.unsplash.com/photo-1565043666747-69f6646db940?auto=format&fit=crop&w=2000&q=82") center/cover;
+      overflow: hidden;
+    }
+    .final-title { font-size: 58px; max-width: 840px; }
+    .site-footer {
+      position: relative;
+      z-index: 2;
+      border-top: 1px solid rgba(0,212,255,.16);
+      background: rgba(8,10,14,.88);
+      margin-top: 12px;
+    }
+    .site-footer-inner {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 26px 22px;
+      display: grid;
+      grid-template-columns: minmax(0,1.2fr) minmax(0,.8fr);
+      gap: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .site-footer a { color: var(--cyan); text-decoration: none; }
+    @media (max-width: 980px) {
+      .grid-4, .grid-3, .grid-2, .machine-grid, .gauge-row, .factory-analytics, .steps, .site-footer-inner { grid-template-columns: 1fr 1fr; }
+      .hero-content { padding: 28px; }
+      .system-map { min-height: auto; padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .system-center, .node { position: static; transform: none; width: auto; min-height: 62px; }
+      .node:before { display: none; }
+      .system-illustration { min-height:auto; padding:16px; gap:10px; }
+      .system-orbit { position:static; width:auto; min-height:74px; }
+      .system-orbit:before { display:none; }
+    }
+    @media (max-width: 680px) {
+      .topbar-inner { flex-direction: column; align-items: flex-start; }
+      .container { padding-left: 14px; padding-right: 14px; }
+      .grid-4, .grid-3, .grid-2, .machine-grid, .gauge-row, .factory-analytics, .mini-people, .steps, .flow-row, .site-footer-inner, .system-map { grid-template-columns: 1fr; }
+      h1 { font-size: 38px; }
+      h2 { font-size: 30px; }
+      .final-title { font-size: 32px; }
+      .accent-line { font-size: 22px; }
+      .lead { font-size: 16px; }
+      .hero { min-height: 560px; }
+      .hero-content { padding-top: 54px; }
+      .panel { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+<canvas id="neural-bg"></canvas>
+<div class="scroll-shade" aria-hidden="true"></div>
+<div class="app">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/manufacturing/">
+        <img src="/logo.png" alt="BizDNAi" onerror="this.style.display='none'">
+        <span class="brand-mark">M</span>
+        <span class="brand-text"><strong>BizDNAi Manufacturing</strong><span>Digital production control</span></span>
+      </a>
+      <div class="top-actions">
+        <a href="https://t.me/bizdnai" target="_blank" rel="noopener noreferrer" class="tg-cta-btn">
+          <svg width="14" height="14" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path fill="currentColor" d="M120 0C53.7 0 0 53.7 0 120s53.7 120 120 120 120-53.7 120-120S186.3 0 120 0Zm55.6 82.3-19.8 93.3c-1.5 6.7-5.4 8.3-11 5.2l-30.4-22.4-14.7 14.1c-1.6 1.6-3 3-6.1 3l2.2-30.9 56.2-50.8c2.4-2.2-.5-3.4-3.7-1.2l-69.5 43.8-29.9-9.3c-6.5-2-6.6-6.5 1.4-9.6l117-45.1c5.4-2 10.2 1.3 8.3 9.9Z"/></svg>
+          <span>Telegram</span>
+        </a>
+        <a class="btn" href="/valiq-enterprise/">ValIQ Enterprise</a>
+        <div class="lang-bar" aria-label="Language selector">
+          <button class="lang-toggle" type="button" data-site-lang="en">EN</button>
+          <button class="lang-toggle active" type="button" data-site-lang="ru">RU</button>
+          <button class="lang-toggle" type="button" data-site-lang="kz">KZ</button>
+        </div>
+        <a class="btn primary" href="#demo" data-open-feedback>Получить демонстрацию</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="hero-content">
+        <div class="eyebrow">Цифровизация производства</div>
+        <h1>Полный контроль над производством в одном окне</h1>
+        <p class="lead">Объединяем сотрудников, оборудование, производство, склад и аналитику в единую цифровую платформу. Директор видит реальную картину завода и принимает решения на основе данных, а не догадок.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#demo" data-open-feedback>Показать, как это работает</a>
+          <a class="btn" href="#realtime">Производство онлайн</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Проблема</div>
+          <h2>Почему большинство заводов работают вслепую</h2>
+        </div>
+      </div>
+      <div class="cards-auto">
+        <div class="card icon-card"><span class="visual-icon red">⏱</span><div><strong>Проблемы видны слишком поздно</strong><p>Директор узнает о сбоях после простоя, брака или срыва срока.</p></div></div>
+        <div class="card icon-card"><span class="visual-icon yellow">🏭</span><div><strong>Оборудование простаивает</strong><p>Нет единого статуса станков, линий, датчиков и причин остановки.</p></div></div>
+        <div class="card icon-card"><span class="visual-icon magenta">👷</span><div><strong>Работа сотрудников непрозрачна</strong><p>Задачи, чек-листы и ответственность распадаются между людьми и чатами.</p></div></div>
+        <div class="card icon-card"><span class="visual-icon">📊</span><div><strong>Данные разбросаны</strong><p>Excel, WhatsApp, 1С, бумага и устные договоренности не дают общей картины.</p></div></div>
+        <div class="card icon-card"><span class="visual-icon green">🧭</span><div><strong>Нет единого окна</strong><p>Руководство не видит производство, склад, качество и деньги одновременно.</p></div></div>
+        <div class="card icon-card"><span class="visual-icon yellow">🎯</span><div><strong>Решения принимаются на ощущениях</strong><p>Когда факты собираются вручную, управлять приходится по интуиции.</p></div></div>
+      </div>
+      <div class="accent-line">Пока информация собирается вручную - производство уже теряет деньги.</div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Решение</div>
+          <h2>Все подразделения работают в единой системе</h2>
+        </div>
+        <span class="pill cyan">Enterprise OS</span>
+      </div>
+      <div class="card solution-picture">
+        <img
+          id="solutionImage"
+          class="solution-image"
+          src="/manufacturing/assets/solution-ru.jpg"
+          width="1802"
+          height="872"
+          alt="Единая цифровая платформа связывает директора, производство, склад, качество, финансы и оборудование"
+          loading="lazy"
+        >
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Цифровые сотрудники</div>
+          <h2>Управление людьми</h2>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="cards-auto">
+          <div class="card icon-card"><span class="visual-icon">📝</span><div><strong>Постановка задач</strong><p>Задачи уходят ответственным с дедлайнами и статусами.</p></div></div>
+          <div class="card icon-card"><span class="visual-icon green">☑️</span><div><strong>Чек-листы и регламенты</strong><p>Работа выполняется по стандарту, а не по памяти.</p></div></div>
+          <div class="card icon-card"><span class="visual-icon yellow">🎓</span><div><strong>Инструкции и обучение</strong><p>Новичок быстрее входит в процесс, знания не уходят вместе с людьми.</p></div></div>
+          <div class="card icon-card"><span class="visual-icon magenta">📍</span><div><strong>KPI и контроль</strong><p>Выполнение, скорость, качество и дисциплина видны руководителю.</p></div></div>
+          <div class="card icon-card"><span class="visual-icon">📲</span><div><strong>Мобильный контур</strong><p>Уведомления, согласования, цифровые подписи и история действий.</p></div></div>
+        </div>
+        <div class="ops-dashboard">
+          <div class="section-title" style="margin-bottom:0;"><h3>Кабинет сотрудника</h3><span class="pill green">online</span></div>
+          <div class="card"><strong>Смена 2 · Линия 4</strong><p>7 задач в работе · 2 чек-листа · 1 согласование</p><div class="line-bar"><i style="width:72%"></i></div></div>
+          <div class="grid-2">
+            <div class="gauge"><b>94%</b><span>Выполнение задач</span></div>
+            <div class="gauge"><b>12</b><span>Действий в истории</span></div>
+          </div>
+          <div class="card"><strong>Инструкция</strong><p>Запуск партии · Контроль качества · Закрытие смены</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Планирование</div>
+        </div>
+        <span class="pill cyan">Production planning</span>
+      </div>
+      <div class="card solution-picture planning-picture">
+        <img
+          id="planningImage"
+          class="solution-image"
+          src="/manufacturing/assets/planning-ru.jpg"
+          alt="Планирование производства, заказов, смен, материалов и сроков в единой системе"
+          loading="lazy"
+        >
+      </div>
+    </section>
+
+    <section class="panel" id="realtime">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Цифровое производство</div>
+          <h2>Производство в режиме реального времени</h2>
+        </div>
+        <span class="pill cyan">Live dashboard</span>
+      </div>
+      <div class="ops-dashboard">
+        <div class="machine-grid">
+          <div class="machine-card"><div class="name">Станок №1</div><span class="status green">● Работает</span><div class="line-bar"><i style="width:88%"></i></div><p class="tiny">Производительность 88%</p></div>
+          <div class="machine-card"><div class="name">Станок №2</div><span class="status yellow">● Требует обслуживания</span><div class="line-bar"><i style="width:54%"></i></div><p class="tiny">Осталось 15% ресурса</p></div>
+          <div class="machine-card"><div class="name">Станок №3</div><span class="status red">● Остановлен</span><div class="line-bar"><i style="width:12%"></i></div><p class="tiny">Причина: перегрев двигателя</p></div>
+        </div>
+        <div class="gauge-row">
+          <div class="gauge"><b>72°C</b><span>Температура</span></div>
+          <div class="gauge"><b>6.4 bar</b><span>Давление</span></div>
+          <div class="gauge"><b>18.7 kW</b><span>Электропотребление</span></div>
+          <div class="gauge"><b>1 248</b><span>Счетчик продукции</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Интернет вещей</div>
+          <h2>Любое оборудование подключается к системе</h2>
+        </div>
+      </div>
+      <div class="icon-cloud">
+        <span class="iot-chip"><span class="iot-icon">📡</span>датчики</span><span class="iot-chip"><span class="iot-icon">🔌</span>реле</span><span class="iot-chip"><span class="iot-icon">🔢</span>счетчики</span><span class="iot-chip"><span class="iot-icon">⚡</span>электрика</span><span class="iot-chip"><span class="iot-icon">💧</span>вода</span><span class="iot-chip"><span class="iot-icon">🔥</span>газ</span><span class="iot-chip"><span class="iot-icon">🌡</span>температура</span><span class="iot-chip"><span class="iot-icon">💦</span>влажность</span><span class="iot-chip"><span class="iot-icon">🔋</span>энергия</span><span class="iot-chip"><span class="iot-icon">🏭</span>станки</span><span class="iot-chip"><span class="iot-icon">🧩</span>PLC</span><span class="iot-chip"><span class="iot-icon">〰️</span>ZigBee</span><span class="iot-chip"><span class="iot-icon">📶</span>Wi-Fi</span><span class="iot-chip"><span class="iot-icon">🏠</span>Tuya</span><span class="iot-chip"><span class="iot-icon">🔁</span>Modbus</span><span class="iot-chip"><span class="iot-icon">🌐</span>MQTT</span>
+      </div>
+      <div class="accent-line">Любое оборудование становится частью единой цифровой системы.</div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Аналитика</div>
+          <h2>Директор видит все сразу</h2>
+        </div>
+      </div>
+      <div class="factory-analytics">
+        <div class="zone-board">
+          <div class="area-card"><span class="visual-icon green">🏭</span><div><strong>Цех 1</strong><p>План выполняется, линия стабильна</p></div><span class="pct">82%</span></div>
+          <div class="area-card yellow"><span class="visual-icon yellow">🏗</span><div><strong>Цех 2</strong><p>Есть задержки по материалам</p></div><span class="pct">63%</span></div>
+          <div class="area-card"><span class="visual-icon green">🧾</span><div><strong>Заказы</strong><p>Выполнение заказов за смену</p></div><span class="pct">78%</span></div>
+          <div class="area-card yellow"><span class="visual-icon yellow">📦</span><div><strong>Склад</strong><p>Остатки и резерв под производство</p></div><span class="pct">64%</span></div>
+          <div class="area-card red"><span class="visual-icon red">⚠️</span><div><strong>Качество</strong><p>Рост повторяемых дефектов</p></div><span class="pct">48%</span></div>
+        </div>
+        <div class="people-board">
+          <div class="section-title" style="margin-bottom:0;"><h3>Команды и эффективность</h3><span class="pill cyan">12 сотрудников</span></div>
+          <div class="mini-people">
+            <div class="person-card"><span class="avatar photo" style="background-image:url('https://i.pravatar.cc/80?img=12')">АК</span><div><strong>А. Ким</strong><small>мастер</small></div><div class="eff green"><span>92%</span><div class="line-bar"><i style="width:92%"></i></div></div></div>
+            <div class="person-card"><span class="avatar photo" style="background-image:url('https://i.pravatar.cc/80?img=33')">ИС</span><div><strong>И. Садык</strong><small>оператор</small></div><div class="eff green"><span>88%</span><div class="line-bar"><i style="width:88%"></i></div></div></div>
+            <div class="person-card"><span class="avatar photo" style="background-image:url('https://i.pravatar.cc/80?img=47')">МТ</span><div><strong>М. Тулеу</strong><small>ОТК</small></div><div class="eff yellow"><span>74%</span><div class="line-bar"><i style="width:74%"></i></div></div></div>
+            <div class="person-card"><span class="avatar photo" style="background-image:url('https://i.pravatar.cc/80?img=5')">ЕЛ</span><div><strong>Е. Ли</strong><small>склад</small></div><div class="eff green"><span>81%</span><div class="line-bar"><i style="width:81%"></i></div></div></div>
+            <div class="person-card"><span class="avatar photo" style="background-image:url('https://i.pravatar.cc/80?img=52')">НР</span><div><strong>Н. Рахим</strong><small>наладчик</small></div><div class="eff yellow"><span>69%</span><div class="line-bar"><i style="width:69%"></i></div></div></div>
+            <div class="person-card"><span class="avatar photo" style="background-image:url('https://i.pravatar.cc/80?img=14')">СП</span><div><strong>С. Пак</strong><small>линия 2</small></div><div class="eff red"><span>48%</span><div class="line-bar"><i style="width:48%"></i></div></div></div>
+            <div class="person-card"><span class="avatar photo" style="background-image:url('https://i.pravatar.cc/80?img=20')">ГН</span><div><strong>Г. Нур</strong><small>закуп</small></div><div class="eff green"><span>91%</span><div class="line-bar"><i style="width:91%"></i></div></div></div>
+            <div class="person-card"><span class="avatar photo" style="background-image:url('https://i.pravatar.cc/80?img=41')">РО</span><div><strong>Р. Омар</strong><small>оператор</small></div><div class="eff yellow"><span>73%</span><div class="line-bar"><i style="width:73%"></i></div></div></div>
+            <div class="person-card"><span class="avatar photo" style="background-image:url('https://i.pravatar.cc/80?img=26')">ЛА</span><div><strong>Л. Али</strong><small>смена 3</small></div><div class="eff green"><span>86%</span><div class="line-bar"><i style="width:86%"></i></div></div></div>
+            <div class="person-card"><span class="avatar photo" style="background-image:url('https://i.pravatar.cc/80?img=9')">ТВ</span><div><strong>Т. Вон</strong><small>упаковка</small></div><div class="eff yellow"><span>67%</span><div class="line-bar"><i style="width:67%"></i></div></div></div>
+            <div class="person-card"><span class="avatar photo" style="background-image:url('https://i.pravatar.cc/80?img=58')">ДА</span><div><strong>Д. Асан</strong><small>ремонт</small></div><div class="eff red"><span>52%</span><div class="line-bar"><i style="width:52%"></i></div></div></div>
+            <div class="person-card"><span class="avatar photo" style="background-image:url('https://i.pravatar.cc/80?img=31')">ЖК</span><div><strong>Ж. Кайр</strong><small>смена 1</small></div><div class="eff green"><span>79%</span><div class="line-bar"><i style="width:79%"></i></div></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Предиктивная аналитика</div>
+          <h2>Система предупреждает раньше, чем возникнет проблема</h2>
+        </div>
+      </div>
+      <div class="cards-auto">
+        <div class="card alert-card icon-card"><span class="visual-icon yellow">🧭</span><div><strong>Осталось 15% ресурса</strong><p>Плановое обслуживание можно поставить до остановки линии.</p></div></div>
+        <div class="card alert-card icon-card"><span class="visual-icon yellow">🔋</span><div><strong>Батарея датчика разряжается</strong><p>Зона контроля не останется без сигнала.</p></div></div>
+        <div class="card alert-card icon-card"><span class="visual-icon red">🌡</span><div><strong>Перегрев двигателя</strong><p>Температура вышла за нормальный коридор.</p></div></div>
+        <div class="card alert-card icon-card"><span class="visual-icon magenta">📳</span><div><strong>Увеличилась вибрация</strong><p>Система фиксирует отклонение от нормального профиля.</p></div></div>
+        <div class="card alert-card icon-card"><span class="visual-icon red">⛔</span><div><strong>Вероятность остановки линии</strong><p>Риск рассчитывается до фактического простоя.</p></div></div>
+        <div class="card alert-card icon-card"><span class="visual-icon green">🛠</span><div><strong>Требуется обслуживание</strong><p>Заявка может быть создана автоматически.</p></div></div>
+      </div>
+      <div class="accent-line">Мы не устраняем аварии. Мы предупреждаем их заранее.</div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Управление заказом</div>
+          <h2>От заказа до производства - один автоматизированный сценарий</h2>
+        </div>
+      </div>
+      <div class="order-flow">
+        <div class="flow-row"><div class="flow-label"><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">🧾</span>Пришел заказ</div><div class="flow-detail">500 окон попадают в систему как производственная потребность.</div></div>
+        <div class="flow-row"><div class="flow-label"><span class="visual-icon green" style="width:30px;height:30px;font-size:17px;border-radius:7px;">🧮</span>Авторасчет</div><div class="flow-detail">Материалы, комплектующие, персонал, смены и сроки рассчитываются автоматически.</div></div>
+        <div class="flow-row"><div class="flow-label"><span class="visual-icon yellow" style="width:30px;height:30px;font-size:17px;border-radius:7px;">📦</span>Склад</div><div class="flow-detail">В наличии 320 комплектов. Не хватает 180.</div></div>
+        <div class="flow-row"><div class="flow-label"><span class="visual-icon magenta" style="width:30px;height:30px;font-size:17px;border-radius:7px;">🚚</span>Поставщик</div><div class="flow-detail">Создается заявка поставщику, фиксируются сроки и ответственный.</div></div>
+        <div class="flow-row"><div class="flow-label"><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">🏭</span>Производство</div><div class="flow-detail">Планируется выпуск, назначаются смены, контролируется выполнение.</div></div>
+      </div>
+      <div class="accent-line">Весь процесс полностью автоматизирован.</div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Интеграции</div>
+          <h2>Работаем с тем, что уже есть</h2>
+        </div>
+      </div>
+      <div class="icon-cloud">
+        <span class="integration-logo"><span class="logo-mark onec">1C</span><span>1С</span></span>
+        <span class="integration-logo"><span class="logo-mark">ERP</span><span>ERP</span></span>
+        <span class="integration-logo"><span class="logo-mark api">CRM</span><span>CRM</span></span>
+        <span class="integration-logo"><span class="logo-mark">MES</span><span>MES</span></span>
+        <span class="integration-logo"><span class="logo-mark excel">X</span><span>Excel</span></span>
+        <span class="integration-logo"><span class="logo-mark">✉</span><span>почта</span></span>
+        <span class="integration-logo"><span class="logo-mark tg">▶</span><span>Telegram</span></span>
+        <span class="integration-logo"><span class="logo-mark wa">☎</span><span>WhatsApp</span></span>
+        <span class="integration-logo"><span class="logo-mark">IP</span><span>IP-телефония</span></span>
+        <span class="integration-logo"><span class="logo-mark api">{ }</span><span>API</span></span>
+        <span class="integration-logo"><span class="logo-mark">PLC</span><span>PLC</span></span>
+        <span class="integration-logo"><span class="logo-mark">IoT</span><span>датчики</span></span>
+        <span class="integration-logo"><span class="logo-mark">SC</span><span>SCADA</span></span>
+        <span class="integration-logo"><span class="logo-mark sql">DB</span><span>SQL</span></span>
+      </div>
+      <div class="accent-line">Не заменяем существующие системы. Объединяем их.</div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Кабинет директора</div>
+          <h2>Один экран вместо десятков программ</h2>
+        </div>
+      </div>
+      <div class="director-dashboard director-board">
+        <div class="grid-3">
+          <div class="smart-kpi"><span class="visual-icon green" style="width:46px;height:46px;font-size:24px;">🏭</span><div><strong>Производство</strong><p>План смены выполняется</p></div><span class="pct">94%</span></div>
+          <div class="smart-kpi yellow"><span class="visual-icon yellow" style="width:46px;height:46px;font-size:24px;">📦</span><div><strong>Склад</strong><p>Есть дефицит по 2 позициям</p></div><span class="pct">64%</span></div>
+          <div class="smart-kpi"><span class="visual-icon green" style="width:46px;height:46px;font-size:24px;">💰</span><div><strong>Финансы</strong><p>Маржа партии в норме</p></div><span class="pct">81%</span></div>
+          <div class="smart-kpi red"><span class="visual-icon red" style="width:46px;height:46px;font-size:24px;">⚠️</span><div><strong>Предупреждения</strong><p>3 события требуют решения</p></div><span class="pct">3</span></div>
+          <div class="smart-kpi yellow"><span class="visual-icon yellow" style="width:46px;height:46px;font-size:24px;">👷</span><div><strong>Сотрудники</strong><p>2 человека отстают по задачам</p></div><span class="pct">74%</span></div>
+          <div class="smart-kpi"><span class="visual-icon green" style="width:46px;height:46px;font-size:24px;">✅</span><div><strong>Качество</strong><p>ОТК закрыл 18 проверок</p></div><span class="pct">89%</span></div>
+        </div>
+        <div class="grid-3">
+          <div class="card icon-card"><span class="visual-icon">⚙️</span><div><strong>Оборудование</strong><p>Станок №2 требует обслуживания до 18:00.</p></div></div>
+          <div class="card icon-card"><span class="visual-icon magenta">🧾</span><div><strong>Документы</strong><p>5 согласований ждут подписи директора.</p></div></div>
+          <div class="card icon-card"><span class="visual-icon green">📈</span><div><strong>KPI</strong><p>Цех 1 ведет план, цех 2 требует внимания.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Результат</div>
+          <h2>Что получает предприятие</h2>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="card benefit"><span class="visual-icon green" style="width:30px;height:30px;font-size:17px;border-radius:7px;">📈</span><b>⬆</b><strong>Производительность</strong></div>
+        <div class="card benefit"><span class="visual-icon green" style="width:30px;height:30px;font-size:17px;border-radius:7px;">⏱</span><b>⬇</b><strong>Простои</strong></div>
+        <div class="card benefit"><span class="visual-icon green" style="width:30px;height:30px;font-size:17px;border-radius:7px;">💸</span><b>⬇</b><strong>Потери</strong></div>
+        <div class="card benefit"><span class="visual-icon green" style="width:30px;height:30px;font-size:17px;border-radius:7px;">📄</span><b>⬇</b><strong>Бумажный документооборот</strong></div>
+        <div class="card benefit"><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">🎛</span><b>⬆</b><strong>Контроль</strong></div>
+        <div class="card benefit"><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">⚡</span><b>⬆</b><strong>Скорость решений</strong></div>
+        <div class="card benefit"><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">🔍</span><b>⬆</b><strong>Прозрачность</strong></div>
+        <div class="card benefit"><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">✅</span><b>⬆</b><strong>Дисциплина</strong></div>
+        <div class="card benefit"><span class="visual-icon green" style="width:30px;height:30px;font-size:17px;border-radius:7px;">💰</span><b>⬆</b><strong>Прибыль</strong></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Внедрение</div>
+          <h2>Как проходит запуск</h2>
+        </div>
+      </div>
+      <div class="steps">
+        <div class="card step"><div class="step-head"><span class="step-num">1</span><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">🔎</span></div><strong>Аудит предприятия</strong><p>Фиксируем реальные процессы, данные и узкие места.</p></div>
+        <div class="card step"><div class="step-head"><span class="step-num">2</span><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">🧬</span></div><strong>Цифровая модель</strong><p>Проектируем структуру подразделений, ролей, оборудования и заказов.</p></div>
+        <div class="card step"><div class="step-head"><span class="step-num">3</span><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">⚙️</span></div><strong>Подключение оборудования</strong><p>Датчики, реле, счетчики, PLC и линии входят в единый контур.</p></div>
+        <div class="card step"><div class="step-head"><span class="step-num">4</span><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">🔌</span></div><strong>Интеграции</strong><p>Подключаем 1С, CRM, ERP, склад и каналы коммуникации.</p></div>
+        <div class="card step"><div class="step-head"><span class="step-num">5</span><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">☑️</span></div><strong>Настройка процессов</strong><p>Задачи, чек-листы, согласования и контроль качества.</p></div>
+        <div class="card step"><div class="step-head"><span class="step-num">6</span><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">🎓</span></div><strong>Обучение сотрудников</strong><p>Люди начинают работать в новой системе без потери темпа.</p></div>
+        <div class="card step"><div class="step-head"><span class="step-num">7</span><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">🚀</span></div><strong>Запуск</strong><p>Панель директора и операционные контуры работают в реальном времени.</p></div>
+        <div class="card step"><div class="step-head"><span class="step-num">8</span><span class="visual-icon" style="width:30px;height:30px;font-size:17px;border-radius:7px;">📈</span></div><strong>Развитие</strong><p>Сопровождение, аналитика и дальнейшая автоматизация.</p></div>
+      </div>
+    </section>
+
+    <section class="panel final" id="demo">
+      <div class="grid-2" style="align-items:center;">
+        <div class="hero-content">
+          <div class="eyebrow">Демонстрация</div>
+          <h2 class="final-title">Ваш завод может работать по-другому</h2>
+          <p class="lead">Прозрачное производство. Контроль в режиме реального времени. Управление всеми процессами из одной системы.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#demo" data-open-feedback>Получить персональную демонстрацию</a>
+            <a class="btn" href="/valiq-enterprise/">Оценить инвестиционную готовность</a>
+          </div>
+        </div>
+        <div class="gear-visual" aria-hidden="true">
+          <div class="gear one">⚙</div>
+          <div class="gear two">⚙</div>
+          <div class="gear three">⚙</div>
+          <div class="gear-center">Все процессы работают как единый механизм</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div>
+      <strong style="color:#fff;">BizDNAi · Цифровизация производства</strong>
+      <p style="margin:8px 0 0;">Операционная система предприятия: сотрудники, оборудование, производство, склад, заказы, аналитика и кабинет директора в одном контуре.</p>
+    </div>
+    <div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-start;">
+        <a href="/">Главная</a>
+        <a href="/valiq-enterprise/">ValIQ Enterprise</a>
+        <a href="/valiq/">ValIQ IT/AI</a>
+        <a href="/metrics/">Метрики</a>
+        <a href="https://t.me/bizdnai" target="_blank" rel="noopener">Telegram-канал</a>
+        <a href="https://t.me/KabzhanovR" target="_blank" rel="noopener">Telegram</a>
+        <a href="/privacy-policy/">Политика конфиденциальности</a>
+      </div>
+      <p class="tiny" style="margin-top:12px;">© 2025-2026 BizDNAi. Все права защищены. Created by Rashid Kabzhanov</p>
+    </div>
+  </div>
+</footer>
+
+<div class="modal" id="feedbackModal" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+    <div class="modal-head">
+      <div>
+        <div class="eyebrow">Обратная связь</div>
+        <h2 id="feedbackTitle" style="font-size:30px;">Получить демонстрацию</h2>
+        <p class="muted" style="margin:8px 0 0;">Оставьте контакты и коротко опишите производство. Я вернусь с предложением по цифровизации.</p>
+      </div>
+      <button class="modal-close" type="button" data-close-feedback>×</button>
+    </div>
+    <form class="form-grid" id="feedbackForm">
+      <input name="name" placeholder="Имя" required>
+      <input name="contact" placeholder="Телефон или Telegram" required>
+      <input name="company" placeholder="Компания / производство">
+      <textarea name="message" placeholder="Что хотите оцифровать: оборудование, склад, заказы, сотрудников, аналитику"></textarea>
+      <div class="captcha-slider">
+        <label class="tiny" for="captchaRange">Сдвиньте ползунок вправо, чтобы подтвердить отправку</label>
+        <div class="captcha-row">
+          <input id="captchaRange" name="captcha" type="range" min="0" max="100" value="0">
+          <span class="pill" id="captchaValue">0%</span>
+        </div>
+        <div class="captcha-ok" id="captchaOk"></div>
+      </div>
+      <button class="btn primary" type="submit" id="feedbackSubmit" disabled>Отправить заявку</button>
+      <p class="tiny">Форма откроет подготовленное письмо в вашем почтовом клиенте.</p>
+    </form>
+  </div>
+</div>
+
+<script>
+function initNeuralBackground() {
+  const canvas = document.getElementById("neural-bg");
+  const ctx = canvas && canvas.getContext("2d");
+  if (!canvas || !ctx) return;
+  let dots = [];
+  let width = 0;
+  let height = 0;
+  let dpr = 1;
+  const count = 70;
+  const radius = 138;
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+    dots = Array.from({ length: count }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - .5) * .34 * dpr,
+      vy: (Math.random() - .5) * .34 * dpr,
+      r: (Math.random() * 1.4 + .8) * dpr
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const scrollRatio = Math.min(window.scrollY / Math.max(document.body.scrollHeight - window.innerHeight, 1), 1);
+    const cyanOpacity = .60 - scrollRatio * .18;
+    const lineBase = .28 - scrollRatio * .08;
+    dots.forEach(dot => {
+      dot.x += dot.vx;
+      dot.y += dot.vy;
+      if (dot.x < 0 || dot.x > canvas.width) dot.vx *= -1;
+      if (dot.y < 0 || dot.y > canvas.height) dot.vy *= -1;
+      ctx.beginPath();
+      ctx.arc(dot.x, dot.y, dot.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0,212,255,${cyanOpacity})`;
+      ctx.fill();
+    });
+    for (let i = 0; i < dots.length; i++) {
+      for (let j = i + 1; j < dots.length; j++) {
+        const dx = dots[i].x - dots[j].x;
+        const dy = dots[i].y - dots[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < radius * dpr) {
+          ctx.beginPath();
+          ctx.moveTo(dots[i].x, dots[i].y);
+          ctx.lineTo(dots[j].x, dots[j].y);
+          ctx.strokeStyle = `rgba(0,255,255,${(1 - dist / (radius * dpr)) * lineBase})`;
+          ctx.lineWidth = .7 * dpr;
+          ctx.stroke();
+        }
+      }
+    }
+    window.requestAnimationFrame(draw);
+  }
+
+  function updateScrollShade() {
+    const max = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+    const ratio = Math.min(window.scrollY / max, 1);
+    const root = document.documentElement.style;
+    root.setProperty("--scroll-dark", (ratio * .56).toFixed(3));
+    root.setProperty("--scroll-mid", (.10 + ratio * .30).toFixed(3));
+    root.setProperty("--scroll-bottom", (.34 + ratio * .34).toFixed(3));
+    root.setProperty("--scroll-cyan", (.15 - ratio * .09).toFixed(3));
+    root.setProperty("--scroll-magenta", (.12 - ratio * .07).toFixed(3));
+    root.setProperty("--neural-opacity", (.82 - ratio * .24).toFixed(3));
+    root.setProperty("--neural-brightness", (1.18 - ratio * .38).toFixed(3));
+    root.setProperty("--neural-saturation", (1.18 - ratio * .22).toFixed(3));
+  }
+  window.addEventListener("resize", resize);
+  window.addEventListener("scroll", updateScrollShade, { passive: true });
+  resize();
+  updateScrollShade();
+  draw();
+}
+initNeuralBackground();
+
+const I18N = {
+  en: {
+    title: "Digital Manufacturing Control · BizDNAi",
+    map: {
+      "Digital production control": "Digital production control",
+      "Получить демонстрацию": "Get a demo",
+      "Цифровизация производства": "Digital Manufacturing",
+      "Полный контроль над производством в одном окне": "Full production control in one window",
+      "Объединяем сотрудников, оборудование, производство, склад и аналитику в единую цифровую платформу. Директор видит реальную картину завода и принимает решения на основе данных, а не догадок.": "We connect people, equipment, production, warehouse and analytics into one digital platform. The director sees the real factory picture and makes decisions from data, not guesses.",
+      "Показать, как это работает": "Show how it works",
+      "Производство онлайн": "Live production",
+      "Проблема": "Problem",
+      "Почему большинство заводов работают вслепую": "Why most factories operate blindly",
+      "Проблемы видны слишком поздно": "Problems are visible too late",
+      "Директор узнает о сбоях после простоя, брака или срыва срока.": "The director learns about issues after downtime, defects or missed deadlines.",
+      "Оборудование простаивает": "Equipment stands idle",
+      "Нет единого статуса станков, линий, датчиков и причин остановки.": "There is no unified status for machines, lines, sensors and downtime reasons.",
+      "Работа сотрудников непрозрачна": "Employee work is opaque",
+      "Задачи, чек-листы и ответственность распадаются между людьми и чатами.": "Tasks, checklists and responsibility are scattered across people and chats.",
+      "Данные разбросаны": "Data is scattered",
+      "Excel, WhatsApp, 1С, бумага и устные договоренности не дают общей картины.": "Excel, WhatsApp, 1C, paper and verbal agreements do not create a single picture.",
+      "Нет единого окна": "No single window",
+      "Руководство не видит производство, склад, качество и деньги одновременно.": "Management cannot see production, warehouse, quality and money at once.",
+      "Решения принимаются на ощущениях": "Decisions are made by feel",
+      "Когда факты собираются вручную, управлять приходится по интуиции.": "When facts are collected manually, management relies on intuition.",
+      "Пока информация собирается вручную - производство уже теряет деньги.": "While information is collected manually, production is already losing money.",
+      "Решение": "Solution",
+      "Все подразделения работают в единой системе": "All departments work in one system",
+      "Цифровые сотрудники": "Digital employees",
+      "Управление людьми": "People management",
+      "Планирование": "Planning",
+      "Постановка задач": "Task assignment",
+      "Задачи уходят ответственным с дедлайнами и статусами.": "Tasks go to responsible people with deadlines and statuses.",
+      "Чек-листы и регламенты": "Checklists and standards",
+      "Работа выполняется по стандарту, а не по памяти.": "Work follows the standard, not memory.",
+      "Инструкции и обучение": "Instructions and training",
+      "Новичок быстрее входит в процесс, знания не уходят вместе с людьми.": "New people ramp faster, and knowledge does not leave with employees.",
+      "KPI и контроль": "KPIs and control",
+      "Выполнение, скорость, качество и дисциплина видны руководителю.": "Execution, speed, quality and discipline are visible to management.",
+      "Мобильный контур": "Mobile workflow",
+      "Уведомления, согласования, цифровые подписи и история действий.": "Notifications, approvals, digital signatures and action history.",
+      "Кабинет сотрудника": "Employee workspace",
+      "Смена 2 · Линия 4": "Shift 2 · Line 4",
+      "7 задач в работе · 2 чек-листа · 1 согласование": "7 tasks in progress · 2 checklists · 1 approval",
+      "Выполнение задач": "Task completion",
+      "Действий в истории": "History actions",
+      "Инструкция": "Instruction",
+      "Запуск партии · Контроль качества · Закрытие смены": "Batch launch · Quality control · Shift close",
+      "Цифровое производство": "Digital production",
+      "Производство в режиме реального времени": "Production in real time",
+      "Станок №1": "Machine #1",
+      "Станок №2": "Machine #2",
+      "Станок №3": "Machine #3",
+      "● Работает": "● Running",
+      "● Требует обслуживания": "● Needs service",
+      "● Остановлен": "● Stopped",
+      "Производительность 88%": "Productivity 88%",
+      "Осталось 15% ресурса": "15% resource remaining",
+      "Причина: перегрев двигателя": "Reason: motor overheating",
+      "Температура": "Temperature",
+      "Давление": "Pressure",
+      "Электропотребление": "Power consumption",
+      "Счетчик продукции": "Product counter",
+      "Интернет вещей": "Internet of Things",
+      "Любое оборудование подключается к системе": "Any equipment connects to the system",
+      "Любое оборудование становится частью единой цифровой системы.": "Any equipment becomes part of a unified digital system.",
+      "Аналитика": "Analytics",
+      "Директор видит все сразу": "The director sees everything at once",
+      "Цех 1": "Workshop 1",
+      "План выполняется, линия стабильна": "Plan is on track, line is stable",
+      "Цех 2": "Workshop 2",
+      "Есть задержки по материалам": "Material delays detected",
+      "Заказы": "Orders",
+      "Выполнение заказов за смену": "Orders completed per shift",
+      "Склад": "Warehouse",
+      "Остатки и резерв под производство": "Stock and production reserve",
+      "Качество": "Quality",
+      "Рост повторяемых дефектов": "Repeat defects are growing",
+      "Команды и эффективность": "Teams and efficiency",
+      "12 сотрудников": "12 employees",
+      "мастер": "foreman",
+      "оператор": "operator",
+      "ОТК": "quality control",
+      "склад": "warehouse",
+      "наладчик": "technician",
+      "линия 2": "line 2",
+      "закуп": "procurement",
+      "смена 3": "shift 3",
+      "упаковка": "packing",
+      "ремонт": "maintenance",
+      "смена 1": "shift 1",
+      "Предиктивная аналитика": "Predictive analytics",
+      "Система предупреждает раньше, чем возникнет проблема": "The system warns before the problem appears",
+      "Осталось 15% ресурса": "15% resource remaining",
+      "Плановое обслуживание можно поставить до остановки линии.": "Planned maintenance can be scheduled before the line stops.",
+      "Батарея датчика разряжается": "Sensor battery is low",
+      "Зона контроля не останется без сигнала.": "The control zone will not lose signal.",
+      "Перегрев двигателя": "Motor overheating",
+      "Температура вышла за нормальный коридор.": "Temperature is outside the normal range.",
+      "Увеличилась вибрация": "Vibration increased",
+      "Система фиксирует отклонение от нормального профиля.": "The system detects deviation from the normal profile.",
+      "Вероятность остановки линии": "Line stop probability",
+      "Риск рассчитывается до фактического простоя.": "Risk is calculated before actual downtime.",
+      "Требуется обслуживание": "Service required",
+      "Заявка может быть создана автоматически.": "A service request can be created automatically.",
+      "Мы не устраняем аварии.": "We do not just fix accidents.",
+      "Мы предупреждаем их заранее.": "We prevent them in advance.",
+      "Мы не устраняем аварии. Мы предупреждаем их заранее.": "We do not just fix accidents. We prevent them in advance.",
+      "Управление заказом": "Order management",
+      "От заказа до производства - один автоматизированный сценарий": "From order to production: one automated scenario",
+      "Пришел заказ": "Order received",
+      "500 окон попадают в систему как производственная потребность.": "500 windows enter the system as a production demand.",
+      "Авторасчет": "Auto calculation",
+      "Материалы, комплектующие, персонал, смены и сроки рассчитываются автоматически.": "Materials, components, people, shifts and deadlines are calculated automatically.",
+      "В наличии 320 комплектов. Не хватает 180.": "320 kits in stock. 180 missing.",
+      "Поставщик": "Supplier",
+      "Создается заявка поставщику, фиксируются сроки и ответственный.": "A supplier request is created with deadlines and owner.",
+      "Производство": "Production",
+      "Планируется выпуск, назначаются смены, контролируется выполнение.": "Output is planned, shifts are assigned, execution is controlled.",
+      "Весь процесс полностью автоматизирован": "The whole process is automated",
+      "Весь процесс полностью автоматизирован.": "The whole process is fully automated.",
+      "Интеграции": "Integrations",
+      "Работаем с тем, что уже есть": "We work with what you already have",
+      "почта": "email",
+      "IP-телефония": "IP telephony",
+      "датчики": "sensors",
+      "реле": "relays",
+      "счетчики": "meters",
+      "электрика": "electricity",
+      "вода": "water",
+      "газ": "gas",
+      "температура": "temperature",
+      "влажность": "humidity",
+      "энергия": "energy",
+      "станки": "machines",
+      "Не заменяем существующие системы.": "We do not replace existing systems.",
+      "Объединяем их.": "We connect them.",
+      "Не заменяем существующие системы. Объединяем их.": "We do not replace existing systems. We connect them.",
+      "Кабинет директора": "Director dashboard",
+      "Один экран вместо десятков программ": "One screen instead of dozens of programs",
+      "План смены выполняется": "Shift plan is on track",
+      "Есть дефицит по 2 позициям": "Shortage in 2 items",
+      "Финансы": "Finance",
+      "Маржа партии в норме": "Batch margin is normal",
+      "Предупреждения": "Warnings",
+      "3 события требуют решения": "3 events require a decision",
+      "Сотрудники": "Employees",
+      "2 человека отстают по задачам": "2 people are behind on tasks",
+      "ОТК закрыл 18 проверок": "Quality control closed 18 checks",
+      "Оборудование": "Equipment",
+      "Станок №2 требует обслуживания до 18:00.": "Machine #2 needs service before 18:00.",
+      "Документы": "Documents",
+      "5 согласований ждут подписи директора.": "5 approvals await the director's signature.",
+      "Цех 1 ведет план, цех 2 требует внимания.": "Workshop 1 is on plan, workshop 2 needs attention.",
+      "Результат": "Result",
+      "Что получает предприятие": "What the company gets",
+      "Производительность": "Productivity",
+      "Простои": "Downtime",
+      "Потери": "Losses",
+      "Бумажный документооборот": "Paper document flow",
+      "Контроль": "Control",
+      "Скорость решений": "Decision speed",
+      "Прозрачность": "Transparency",
+      "Дисциплина": "Discipline",
+      "Прибыль": "Profit",
+      "Внедрение": "Implementation",
+      "Как проходит внедрение": "Implementation process",
+      "Как проходит запуск": "Launch process",
+      "Аудит предприятия": "Enterprise audit",
+      "Фиксируем реальные процессы, данные и узкие места.": "We capture real processes, data and bottlenecks.",
+      "Цифровая модель": "Digital model",
+      "Проектируем структуру подразделений, ролей, оборудования и заказов.": "We design departments, roles, equipment and orders.",
+      "Подключение оборудования": "Equipment connection",
+      "Датчики, реле, счетчики, PLC и линии входят в единый контур.": "Sensors, relays, meters, PLC and lines enter one loop.",
+      "Подключаем 1С, CRM, ERP, склад и каналы коммуникации.": "We connect 1C, CRM, ERP, warehouse and communication channels.",
+      "Настройка процессов": "Process setup",
+      "Задачи, чек-листы, согласования и контроль качества.": "Tasks, checklists, approvals and quality control.",
+      "Обучение сотрудников": "Employee training",
+      "Люди начинают работать в новой системе без потери темпа.": "People start working in the new system without losing pace.",
+      "Запуск": "Launch",
+      "Панель директора и операционные контуры работают в реальном времени.": "The director dashboard and operating loops work in real time.",
+      "Развитие": "Development",
+      "Сопровождение, аналитика и дальнейшая автоматизация.": "Support, analytics and further automation.",
+      "Финальный экран": "Final step",
+      "Ваш завод может работать по-другому": "Your factory can work differently",
+      "Прозрачное производство. Контроль в режиме реального времени. Управление всеми процессами из одной системы.": "Transparent production. Real-time control. Management of all processes from one system.",
+      "Получить персональную демонстрацию": "Get a personal demo",
+      "Оценить инвестиционную готовность": "Assess investment readiness",
+      "Все процессы работают как единый механизм": "All processes work as one mechanism",
+      "Обратная связь": "Feedback",
+      "Расскажите, какое производство нужно оцифровать. Мы вернемся с демонстрацией и планом первого этапа.": "Tell us what production should be digitized. We will come back with a demo and first-stage plan.",
+      "Сдвиньте ползунок вправо, чтобы подтвердить отправку": "Move the slider right to confirm sending",
+      "Отправить заявку": "Send request",
+      "Форма откроет подготовленное письмо в вашем почтовом клиенте.": "The form will open a prepared email in your mail client.",
+      "Проверка пройдена": "Check passed",
+      "Сдвиньте ползунок до конца": "Move the slider to the end",
+      "Политика конфиденциальности": "Privacy Policy",
+      "© 2025-2026 BizDNAi. Все права защищены. Created by Rashid Kabzhanov": "© 2025-2026 BizDNAi. All rights reserved. Created by Rashid Kabzhanov"
+    },
+    placeholders: {
+      "Ваше имя": "Your name",
+      "Телефон или Telegram": "Phone or Telegram",
+      "Компания": "Company",
+      "Что хотите увидеть на демонстрации": "What you want to see in the demo"
+    }
+  },
+  kz: {
+    title: "Өндірісті цифрлық басқару · BizDNAi",
+    map: {
+      "Digital production control": "Өндірісті цифрлық басқару",
+      "Получить демонстрацию": "Демонстрация алу",
+      "Цифровизация производства": "Өндірісті цифрландыру",
+      "Полный контроль над производством в одном окне": "Өндірісті толық бақылау бір терезеде",
+      "Объединяем сотрудников, оборудование, производство, склад и аналитику в единую цифровую платформу. Директор видит реальную картину завода и принимает решения на основе данных, а не догадок.": "Қызметкерлерді, жабдықты, өндірісті, қойманы және аналитиканы бір цифрлық платформаға біріктіреміз. Директор зауыттың нақты көрінісін көріп, шешімді болжаммен емес, дерекпен қабылдайды.",
+      "Показать, как это работает": "Қалай жұмыс істейтінін көрсету",
+      "Производство онлайн": "Өндіріс онлайн",
+      "Проблема": "Мәселе",
+      "Почему большинство заводов работают вслепую": "Неге көп зауыттар көз жұмып жұмыс істейді",
+      "Проблемы видны слишком поздно": "Мәселелер тым кеш көрінеді",
+      "Директор узнает о сбоях после простоя, брака или срыва срока.": "Директор ақауды тоқтап қалу, ақаулы өнім немесе мерзім бұзылғаннан кейін біледі.",
+      "Оборудование простаивает": "Жабдық бос тұрады",
+      "Нет единого статуса станков, линий, датчиков и причин остановки.": "Станоктар, желілер, датчиктер және тоқтау себептері бойынша ортақ статус жоқ.",
+      "Работа сотрудников непрозрачна": "Қызметкерлер жұмысы ашық емес",
+      "Задачи, чек-листы и ответственность распадаются между людьми и чатами.": "Тапсырмалар, чек-листтер және жауапкершілік адамдар мен чаттарға бөлініп кетеді.",
+      "Данные разбросаны": "Деректер шашыраңқы",
+      "Excel, WhatsApp, 1С, бумага и устные договоренности не дают общей картины.": "Excel, WhatsApp, 1C, қағаз және ауызша келісімдер ортақ көрініс бермейді.",
+      "Нет единого окна": "Бір терезе жоқ",
+      "Руководство не видит производство, склад, качество и деньги одновременно.": "Басшылық өндірісті, қойманы, сапаны және қаржыны бір уақытта көрмейді.",
+      "Решения принимаются на ощущениях": "Шешімдер сезіммен қабылданады",
+      "Когда факты собираются вручную, управлять приходится по интуиции.": "Фактілер қолмен жиналғанда, басқару интуицияға сүйенеді.",
+      "Пока информация собирается вручную - производство уже теряет деньги.": "Ақпарат қолмен жиналып жатқанда, өндіріс ақша жоғалтып жатыр.",
+      "Решение": "Шешім",
+      "Все подразделения работают в единой системе": "Барлық бөлімдер бір жүйеде жұмыс істейді",
+      "Цифровые сотрудники": "Цифрлық қызметкерлер",
+      "Управление людьми": "Адамдарды басқару",
+      "Планирование": "Жоспарлау",
+      "Постановка задач": "Тапсырма қою",
+      "Задачи уходят ответственным с дедлайнами и статусами.": "Тапсырмалар жауаптыларға мерзім және статуспен беріледі.",
+      "Чек-листы и регламенты": "Чек-листтер және регламенттер",
+      "Работа выполняется по стандарту, а не по памяти.": "Жұмыс жадымен емес, стандарт бойынша орындалады.",
+      "Инструкции и обучение": "Нұсқаулық және оқыту",
+      "Новичок быстрее входит в процесс, знания не уходят вместе с людьми.": "Жаңа қызметкер тез бейімделеді, білім адамдармен бірге жоғалмайды.",
+      "KPI и контроль": "KPI және бақылау",
+      "Выполнение, скорость, качество и дисциплина видны руководителю.": "Орындалу, жылдамдық, сапа және тәртіп басшыға көрінеді.",
+      "Мобильный контур": "Мобильді контур",
+      "Уведомления, согласования, цифровые подписи и история действий.": "Хабарламалар, келісулер, цифрлық қолтаңбалар және әрекеттер тарихы.",
+      "Кабинет сотрудника": "Қызметкер кабинеті",
+      "Смена 2 · Линия 4": "2-ауысым · 4-желі",
+      "7 задач в работе · 2 чек-листа · 1 согласование": "7 тапсырма жұмыста · 2 чек-лист · 1 келісу",
+      "Выполнение задач": "Тапсырмаларды орындау",
+      "Действий в истории": "Тарихтағы әрекет",
+      "Инструкция": "Нұсқаулық",
+      "Запуск партии · Контроль качества · Закрытие смены": "Партияны іске қосу · Сапаны бақылау · Ауысымды жабу",
+      "Цифровое производство": "Цифрлық өндіріс",
+      "Производство в режиме реального времени": "Өндіріс нақты уақытта",
+      "Станок №1": "Станок №1",
+      "Станок №2": "Станок №2",
+      "Станок №3": "Станок №3",
+      "● Работает": "● Жұмыс істеп тұр",
+      "● Требует обслуживания": "● Қызмет көрсету керек",
+      "● Остановлен": "● Тоқтап тұр",
+      "Производительность 88%": "Өнімділік 88%",
+      "Осталось 15% ресурса": "Ресурстың 15% қалды",
+      "Причина: перегрев двигателя": "Себебі: қозғалтқыш қызып кетті",
+      "Температура": "Температура",
+      "Давление": "Қысым",
+      "Электропотребление": "Электр тұтыну",
+      "Счетчик продукции": "Өнім санағышы",
+      "Интернет вещей": "Заттар интернеті",
+      "Любое оборудование подключается к системе": "Кез келген жабдық жүйеге қосылады",
+      "Любое оборудование становится частью единой цифровой системы.": "Кез келген жабдық бірыңғай цифрлық жүйенің бөлігі болады.",
+      "Аналитика": "Аналитика",
+      "Директор видит все сразу": "Директор бәрін бірден көреді",
+      "Цех 1": "1-цех",
+      "План выполняется, линия стабильна": "Жоспар орындалып жатыр, желі тұрақты",
+      "Цех 2": "2-цех",
+      "Есть задержки по материалам": "Материалдар бойынша кешігу бар",
+      "Заказы": "Тапсырыстар",
+      "Выполнение заказов за смену": "Ауысымдағы тапсырыс орындалуы",
+      "Склад": "Қойма",
+      "Остатки и резерв под производство": "Қалдықтар және өндіріс резерві",
+      "Качество": "Сапа",
+      "Рост повторяемых дефектов": "Қайталанатын ақаулар өсіп жатыр",
+      "Команды и эффективность": "Командалар және тиімділік",
+      "12 сотрудников": "12 қызметкер",
+      "мастер": "шебер",
+      "оператор": "оператор",
+      "ОТК": "сапа бақылауы",
+      "склад": "қойма",
+      "наладчик": "реттеуші",
+      "линия 2": "2-желі",
+      "закуп": "сатып алу",
+      "смена 3": "3-ауысым",
+      "упаковка": "қаптау",
+      "ремонт": "жөндеу",
+      "смена 1": "1-ауысым",
+      "Предиктивная аналитика": "Болжамды аналитика",
+      "Система предупреждает раньше, чем возникнет проблема": "Жүйе мәселе шықпай тұрып ескертеді",
+      "Осталось 15% ресурса": "Ресурстың 15% қалды",
+      "Плановое обслуживание можно поставить до остановки линии.": "Жоспарлы қызметті желі тоқтамай тұрып қоюға болады.",
+      "Батарея датчика разряжается": "Датчик батареясы таусылып жатыр",
+      "Зона контроля не останется без сигнала.": "Бақылау аймағы сигналсыз қалмайды.",
+      "Перегрев двигателя": "Қозғалтқыштың қызып кетуі",
+      "Температура вышла за нормальный коридор.": "Температура қалыпты аралықтан шықты.",
+      "Увеличилась вибрация": "Діріл артты",
+      "Система фиксирует отклонение от нормального профиля.": "Жүйе қалыпты профильден ауытқуды тіркейді.",
+      "Вероятность остановки линии": "Желінің тоқтау ықтималдығы",
+      "Риск рассчитывается до фактического простоя.": "Тәуекел нақты тоқтауға дейін есептеледі.",
+      "Требуется обслуживание": "Қызмет көрсету қажет",
+      "Заявка может быть создана автоматически.": "Өтінім автоматты түрде жасалуы мүмкін.",
+      "Мы не устраняем аварии.": "Біз тек апатты жоймаймыз.",
+      "Мы предупреждаем их заранее.": "Біз оларды алдын ала ескертеміз.",
+      "Мы не устраняем аварии. Мы предупреждаем их заранее.": "Біз тек апатты жоймаймыз. Біз оларды алдын ала ескертеміз.",
+      "Управление заказом": "Тапсырысты басқару",
+      "От заказа до производства - один автоматизированный сценарий": "Тапсырыстан өндіріске дейін - бір автоматтандырылған сценарий",
+      "Пришел заказ": "Тапсырыс келді",
+      "500 окон попадают в систему как производственная потребность.": "500 терезе жүйеге өндірістік қажеттілік ретінде түседі.",
+      "Авторасчет": "Автоесептеу",
+      "Материалы, комплектующие, персонал, смены и сроки рассчитываются автоматически.": "Материалдар, жинақтаушылар, персонал, ауысымдар және мерзімдер автоматты есептеледі.",
+      "В наличии 320 комплектов. Не хватает 180.": "Қоймада 320 жинақ бар. 180 жетіспейді.",
+      "Поставщик": "Жеткізуші",
+      "Создается заявка поставщику, фиксируются сроки и ответственный.": "Жеткізушіге өтінім жасалып, мерзім мен жауапты бекітіледі.",
+      "Производство": "Өндіріс",
+      "Планируется выпуск, назначаются смены, контролируется выполнение.": "Шығарылым жоспарланып, ауысымдар тағайындалады, орындалу бақыланады.",
+      "Весь процесс полностью автоматизирован": "Процесс толық автоматтандырылған",
+      "Весь процесс полностью автоматизирован.": "Барлық процесс толық автоматтандырылған.",
+      "Интеграции": "Интеграциялар",
+      "Работаем с тем, что уже есть": "Бар жүйелермен жұмыс істейміз",
+      "почта": "пошта",
+      "IP-телефония": "IP-телефония",
+      "датчики": "датчиктер",
+      "реле": "реле",
+      "счетчики": "санағыштар",
+      "электрика": "электр",
+      "вода": "су",
+      "газ": "газ",
+      "температура": "температура",
+      "влажность": "ылғалдылық",
+      "энергия": "энергия",
+      "станки": "станоктар",
+      "Не заменяем существующие системы.": "Қолданыстағы жүйелерді ауыстырмаймыз.",
+      "Объединяем их.": "Оларды біріктіреміз.",
+      "Не заменяем существующие системы. Объединяем их.": "Қолданыстағы жүйелерді ауыстырмаймыз. Оларды біріктіреміз.",
+      "Кабинет директора": "Директор кабинеті",
+      "Один экран вместо десятков программ": "Ондаған бағдарламаның орнына бір экран",
+      "План смены выполняется": "Ауысым жоспары орындалып жатыр",
+      "Есть дефицит по 2 позициям": "2 позиция бойынша тапшылық бар",
+      "Финансы": "Қаржы",
+      "Маржа партии в норме": "Партия маржасы қалыпты",
+      "Предупреждения": "Ескертулер",
+      "3 события требуют решения": "3 оқиға шешім талап етеді",
+      "Сотрудники": "Қызметкерлер",
+      "2 человека отстают по задачам": "2 адам тапсырмалардан қалып жатыр",
+      "ОТК закрыл 18 проверок": "Сапа бақылауы 18 тексерісті жапты",
+      "Оборудование": "Жабдық",
+      "Станок №2 требует обслуживания до 18:00.": "№2 станокқа 18:00-ге дейін қызмет көрсету керек.",
+      "Документы": "Құжаттар",
+      "5 согласований ждут подписи директора.": "5 келісім директор қолын күтіп тұр.",
+      "Цех 1 ведет план, цех 2 требует внимания.": "1-цех жоспармен келеді, 2-цех назарды қажет етеді.",
+      "Результат": "Нәтиже",
+      "Что получает предприятие": "Кәсіпорын не алады",
+      "Производительность": "Өнімділік",
+      "Простои": "Тоқтап тұру",
+      "Потери": "Шығындар",
+      "Бумажный документооборот": "Қағаз құжат айналымы",
+      "Контроль": "Бақылау",
+      "Скорость решений": "Шешім жылдамдығы",
+      "Прозрачность": "Ашықтық",
+      "Дисциплина": "Тәртіп",
+      "Прибыль": "Пайда",
+      "Внедрение": "Енгізу",
+      "Как проходит внедрение": "Енгізу қалай өтеді",
+      "Как проходит запуск": "Іске қосу қалай өтеді",
+      "Аудит предприятия": "Кәсіпорын аудиті",
+      "Фиксируем реальные процессы, данные и узкие места.": "Нақты процестерді, деректерді және тар орындарды бекітеміз.",
+      "Цифровая модель": "Цифрлық модель",
+      "Проектируем структуру подразделений, ролей, оборудования и заказов.": "Бөлімдер, рөлдер, жабдық және тапсырыстар құрылымын жобалаймыз.",
+      "Подключение оборудования": "Жабдықты қосу",
+      "Датчики, реле, счетчики, PLC и линии входят в единый контур.": "Датчиктер, реле, санағыштар, PLC және желілер бір контурға кіреді.",
+      "Подключаем 1С, CRM, ERP, склад и каналы коммуникации.": "1C, CRM, ERP, қойма және байланыс арналарын қосамыз.",
+      "Настройка процессов": "Процестерді баптау",
+      "Задачи, чек-листы, согласования и контроль качества.": "Тапсырмалар, чек-листтер, келісулер және сапа бақылауы.",
+      "Обучение сотрудников": "Қызметкерлерді оқыту",
+      "Люди начинают работать в новой системе без потери темпа.": "Адамдар жаңа жүйеде қарқын жоғалтпай жұмыс істей бастайды.",
+      "Запуск": "Іске қосу",
+      "Панель директора и операционные контуры работают в реальном времени.": "Директор панелі және операциялық контурлар нақты уақытта жұмыс істейді.",
+      "Развитие": "Даму",
+      "Сопровождение, аналитика и дальнейшая автоматизация.": "Сүйемелдеу, аналитика және әрі қарай автоматтандыру.",
+      "Финальный экран": "Соңғы экран",
+      "Ваш завод может работать по-другому": "Сіздің зауытыңыз басқаша жұмыс істей алады",
+      "Прозрачное производство. Контроль в режиме реального времени. Управление всеми процессами из одной системы.": "Ашық өндіріс. Нақты уақыттағы бақылау. Барлық процесті бір жүйеден басқару.",
+      "Получить персональную демонстрацию": "Жеке демонстрация алу",
+      "Оценить инвестиционную готовность": "Инвестициялық дайындықты бағалау",
+      "Все процессы работают как единый механизм": "Барлық процестер бір механизм сияқты жұмыс істейді",
+      "Обратная связь": "Кері байланыс",
+      "Расскажите, какое производство нужно оцифровать. Мы вернемся с демонстрацией и планом первого этапа.": "Қандай өндірісті цифрландыру керек екенін айтыңыз. Біз демонстрация және бірінші кезең жоспары бойынша қайта байланысамыз.",
+      "Сдвиньте ползунок вправо, чтобы подтвердить отправку": "Жіберуді растау үшін жүгірткіні оңға жылжытыңыз",
+      "Отправить заявку": "Өтінім жіберу",
+      "Форма откроет подготовленное письмо в вашем почтовом клиенте.": "Форма пошта клиентіңізде дайын хатты ашады.",
+      "Проверка пройдена": "Тексеру өтті",
+      "Сдвиньте ползунок до конца": "Жүгірткіні соңына дейін жылжытыңыз",
+      "Политика конфиденциальности": "Құпиялылық саясаты",
+      "© 2025-2026 BizDNAi. Все права защищены. Created by Rashid Kabzhanov": "© 2025-2026 BizDNAi. Барлық құқықтар қорғалған. Created by Rashid Kabzhanov"
+    },
+    placeholders: {
+      "Ваше имя": "Атыңыз",
+      "Телефон или Telegram": "Телефон немесе Telegram",
+      "Компания": "Компания",
+      "Что хотите увидеть на демонстрации": "Демонстрацияда не көргіңіз келеді"
+    }
+  }
+};
+
+const originalTextNodes = new WeakMap();
+const originalPlaceholders = new WeakMap();
+const solutionImages = {
+  ru: "/manufacturing/assets/solution-ru.jpg",
+  en: "/manufacturing/assets/solution-en.jpg",
+  kz: "/manufacturing/assets/solution-kz.jpg"
+};
+const planningImages = {
+  ru: "/manufacturing/assets/planning-ru.jpg",
+  en: "/manufacturing/assets/planning-en.jpg",
+  kz: "/manufacturing/assets/planning-kz.jpg"
+};
+const solutionImageAlt = {
+  ru: "Единая цифровая платформа связывает директора, производство, склад, качество, финансы и оборудование",
+  en: "A unified digital platform connects the director, production, warehouse, quality, finance and equipment",
+  kz: "Бірыңғай цифрлық платформа директорды, өндірісті, қойманы, сапаны, қаржыны және жабдықты байланыстырады"
+};
+const planningImageAlt = {
+  ru: "Планирование производства, заказов, смен, материалов и сроков в единой системе",
+  en: "Production, orders, shifts, materials and deadlines planned in one system",
+  kz: "Өндіріс, тапсырыстар, ауысымдар, материалдар және мерзімдер бір жүйеде жоспарланады"
+};
+let currentSiteLang = "ru";
+function tr(key) {
+  return currentSiteLang === "ru" ? key : ((I18N[currentSiteLang] && I18N[currentSiteLang].map[key]) || key);
+}
+function applySiteLanguage(lang) {
+  const activeLang = I18N[lang] ? lang : "ru";
+  currentSiteLang = activeLang;
+  document.documentElement.lang = activeLang;
+  document.title = activeLang === "ru" ? "Цифровизация производства · BizDNAi" : I18N[activeLang].title;
+  document.querySelectorAll("[data-site-lang]").forEach(button => {
+    button.classList.toggle("active", button.getAttribute("data-site-lang") === activeLang);
+  });
+  const dict = activeLang === "ru" ? {} : I18N[activeLang].map;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (!parent || ["SCRIPT", "STYLE"].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+      return node.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    }
+  });
+  let node;
+  while ((node = walker.nextNode())) {
+    if (!originalTextNodes.has(node)) originalTextNodes.set(node, node.nodeValue);
+    const original = originalTextNodes.get(node);
+    const key = original.trim();
+    node.nodeValue = dict[key] ? original.replace(key, dict[key]) : original;
+  }
+  document.querySelectorAll("[placeholder]").forEach(input => {
+    if (!originalPlaceholders.has(input)) originalPlaceholders.set(input, input.getAttribute("placeholder"));
+    const original = originalPlaceholders.get(input);
+    const translated = activeLang === "ru" ? original : I18N[activeLang].placeholders[original];
+    input.setAttribute("placeholder", translated || original);
+  });
+  const solutionImage = document.getElementById("solutionImage");
+  if (solutionImage) {
+    solutionImage.src = solutionImages[activeLang] || solutionImages.ru;
+    solutionImage.alt = solutionImageAlt[activeLang] || solutionImageAlt.ru;
+  }
+  const planningImage = document.getElementById("planningImage");
+  if (planningImage) {
+    planningImage.src = planningImages[activeLang] || planningImages.ru;
+    planningImage.alt = planningImageAlt[activeLang] || planningImageAlt.ru;
+  }
+  try {
+    localStorage.setItem("bizdnaii_site_lang", activeLang);
+    localStorage.setItem("bizdnaii_widget_lang", activeLang);
+  } catch (error) {}
+}
+document.querySelectorAll("[data-site-lang]").forEach(button => {
+  button.addEventListener("click", () => applySiteLanguage(button.getAttribute("data-site-lang")));
+});
+let savedLang = "ru";
+try { savedLang = localStorage.getItem("bizdnaii_site_lang") || "ru"; } catch (error) {}
+applySiteLanguage(savedLang);
+
+const feedbackModal = document.getElementById("feedbackModal");
+const captchaRange = document.getElementById("captchaRange");
+const captchaValue = document.getElementById("captchaValue");
+const captchaOk = document.getElementById("captchaOk");
+const feedbackSubmit = document.getElementById("feedbackSubmit");
+function openFeedback() {
+  feedbackModal.classList.add("open");
+  feedbackModal.setAttribute("aria-hidden", "false");
+  if (captchaRange) {
+    captchaRange.value = "0";
+    updateCaptcha();
+  }
+  const first = feedbackModal.querySelector("input");
+  if (first) setTimeout(() => first.focus(), 50);
+}
+function closeFeedback() {
+  feedbackModal.classList.remove("open");
+  feedbackModal.setAttribute("aria-hidden", "true");
+}
+document.querySelectorAll("[data-open-feedback]").forEach(el => {
+  el.addEventListener("click", event => {
+    event.preventDefault();
+    openFeedback();
+  });
+});
+document.querySelectorAll("[data-close-feedback]").forEach(el => el.addEventListener("click", closeFeedback));
+feedbackModal.addEventListener("click", event => {
+  if (event.target === feedbackModal) closeFeedback();
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && feedbackModal.classList.contains("open")) closeFeedback();
+});
+function updateCaptcha() {
+  const value = Number(captchaRange.value || 0);
+  captchaValue.textContent = value + "%";
+  const ok = value >= 95;
+  feedbackSubmit.disabled = !ok;
+  captchaOk.textContent = ok ? tr("Проверка пройдена") : "";
+}
+if (captchaRange) captchaRange.addEventListener("input", updateCaptcha);
+document.getElementById("feedbackForm").addEventListener("submit", event => {
+  event.preventDefault();
+  if (Number(captchaRange.value || 0) < 95) {
+    captchaOk.textContent = tr("Сдвиньте ползунок до конца");
+    return;
+  }
+  const fd = new FormData(event.currentTarget);
+  const body = [
+    "Заявка на демонстрацию цифровизации производства",
+    "",
+    "Имя: " + (fd.get("name") || ""),
+    "Контакт: " + (fd.get("contact") || ""),
+    "Компания: " + (fd.get("company") || ""),
+    "",
+    "Комментарий:",
+    fd.get("message") || "",
+    "",
+    "Источник: https://bizdnai.com/manufacturing/"
+  ].join("\n");
+  const url = "mailto:kabzhanov@gmail.com?subject=" + encodeURIComponent("Демонстрация цифровизации производства") + "&body=" + encodeURIComponent(body);
+  window.location.href = url;
+  closeFeedback();
+});
+</script>
+</body>
+</html>

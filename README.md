@@ -15,6 +15,8 @@
 <p align="center">
   <a href="https://bizdnai.com/valiq-enterprise/"><strong>Live Demo</strong></a>
   ·
+  <a href="https://bizdnai.com/manufacturing/"><strong>Manufacturing Control</strong></a>
+  ·
   <a href="https://bizdnai.com/index/app/"><strong>Company Cabinet</strong></a>
   ·
   <a href="./docs/open-methodology.md"><strong>Open Methodology Summary</strong></a>
@@ -56,7 +58,12 @@ The core product idea:
 
 ## Public Demo
 
-The public demo is a static, open product surface:
+The public demo is a static, open product surface. This repository now keeps two public pages:
+
+- `public/index.html` — ValIQ Enterprise investment readiness surface.
+- `manufacturing/index.html` — digital manufacturing control landing page.
+
+ValIQ Enterprise includes:
 
 - investment readiness badge;
 - 0-1000 index;
@@ -73,6 +80,14 @@ Live page:
 ```text
 https://bizdnai.com/valiq-enterprise/
 ```
+
+Manufacturing control page:
+
+```text
+https://bizdnai.com/manufacturing/
+```
+
+It presents the public production digitalization offer: one-window control for people, equipment, production, warehouse, planning and analytics. The page uses RU/EN/KZ language switching and static visual assets stored under `manufacturing/assets/`.
 
 ## Product Layers
 
